@@ -125,6 +125,38 @@ if page == "📊 选题采集":
 
     st.markdown("---")
 
+    # 手动添加选题
+    with st.expander("✏️ 手动添加选题"):
+        with st.form("manual_topic_form"):
+            manual_title = st.text_input("标题 *", placeholder="输入选题标题")
+            manual_excerpt = st.text_area("摘要", placeholder="简单描述一下这个选题", height=80)
+            manual_url = st.text_input("原文链接", placeholder="https://...")
+            manual_source = st.text_input("来源", placeholder="例如：微信、朋友推荐", value="手动添加")
+            submitted = st.form_submit_button("➕ 添加到选题列表", type="primary")
+
+            if submitted and manual_title:
+                from modules.utils import load_json, save_json
+                from datetime import datetime
+                latest_path = collector.topics_dir / 'latest.json'
+                data = load_json(latest_path) if latest_path.exists() else {
+                    'date': datetime.now().strftime('%Y-%m-%d'),
+                    'total_count': 0,
+                    'high_score_count': 0,
+                    'topics': []
+                }
+                new_topic = {
+                    'title': manual_title,
+                    'excerpt': manual_excerpt,
+                    'url': manual_url,
+                    'source': manual_source,
+                    'collected_at': datetime.now().isoformat()
+                }
+                data['topics'].insert(0, new_topic)
+                data['total_count'] = len(data['topics'])
+                save_json(data, latest_path)
+                st.success("✅ 已添加！")
+                st.rerun()
+
     # 显示选题列表
     topics = collector.get_latest_topics()
 
