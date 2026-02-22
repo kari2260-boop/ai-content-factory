@@ -14,6 +14,7 @@ NOTION_DATABASE_ID = os.getenv('NOTION_DATABASE_ID')
 
 # AI API Keys（从系统环境变量读取）
 ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_AUTH_TOKEN')
+ANTHROPIC_BASE_URL = os.getenv('ANTHROPIC_BASE_URL', 'https://www.fucheers.top')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 
 # OpenClaw 配置

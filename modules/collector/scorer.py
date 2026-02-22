@@ -7,7 +7,7 @@ from typing import List, Dict
 from anthropic import Anthropic
 
 from modules.utils import setup_logger
-from modules.config import ANTHROPIC_API_KEY
+from modules.config import ANTHROPIC_API_KEY, ANTHROPIC_BASE_URL
 
 logger = setup_logger('scorer', 'collector.log')
 
@@ -19,7 +19,7 @@ class TopicScorer:
         if not ANTHROPIC_API_KEY:
             raise ValueError("未找到 ANTHROPIC_AUTH_TOKEN 环境变量")
 
-        self.client = Anthropic(api_key=ANTHROPIC_API_KEY)
+        self.client = Anthropic(api_key=ANTHROPIC_API_KEY, base_url=ANTHROPIC_BASE_URL)
         self.model = "claude-sonnet-4-5-20250929"
 
     def score_topics(self, topics: List[Dict]) -> List[Dict]:
