@@ -13,7 +13,15 @@ from modules.utils import setup_logger, save_json, get_date_str, DATA_DIR
 
 logger = setup_logger('collector_main', 'collector.log')
 
-# 尝试导入 OpenClaw 实时采集器
+# 尝试导入混合实时采集器（优先）
+try:
+    from modules.collector.hybrid_realtime_collector import HybridRealtimeCollector
+    HYBRID_AVAILABLE = True
+except:
+    HYBRID_AVAILABLE = False
+    logger.warning("混合实时采集器不可用")
+
+# 尝试导入 OpenClaw 实时采集器（备用）
 try:
     from modules.collector.realtime_collector import RealtimeCollector
     OPENCLAW_AVAILABLE = True
@@ -33,9 +41,12 @@ except:
 class TopicCollector:
     """选题采集器"""
 
-    def __init__(self):
-        self.topics_dir = DATA_DIR / 'topics'
-        self.topics_dir.mkdir(exist_ok=True)
+    def __init__(self, user_id: str = 'dr_k'):
+        self.user_id = user_id
+        # 使用用户专属数据目录
+        from modules.utils import DATA_DIR
+        self.topics_dir = DATA_DIR / 'users' / user_id / 'topics'
+        self.topics_dir.mkdir(parents=True, exist_ok=True)
         self.scorer = TopicScorer()
 
     def run(self, use_openclaw: bool = True) -> List[Dict]:
@@ -44,7 +55,22 @@ class TopicCollector:
         logger.info("开始选题采集流程")
         logger.info("=" * 50)
 
-        # 优先尝试 OpenClaw 实时采集
+        # 优先尝试混合实时采集（Claude API + 搜索）
+        if use_openclaw and HYBRID_AVAILABLE:
+            logger.info("尝试使用混合实时采集（Claude API + 搜索）")
+            try:
+                hybrid_collector = HybridRealtimeCollector(user_id=self.user_id)
+                topics = hybrid_collector.run()
+                if topics and len(topics) >= 10:
+                    logger.info(f"混合实时采集成功，共 {len(topics)} 个选题")
+                    self._save_topics(topics)
+                    return topics
+                else:
+                    logger.warning("混合实时采集选题不足，切换到 OpenClaw 方式")
+            except Exception as e:
+                logger.error(f"混合实时采集异常: {str(e)}，切换到 OpenClaw 方式")
+
+        # 备用：OpenClaw 实时采集
         if use_openclaw and OPENCLAW_AVAILABLE:
             logger.info("尝试使用 OpenClaw 实时采集全网热点")
             try:
@@ -52,6 +78,7 @@ class TopicCollector:
                 topics = openclaw_collector.run()
                 if topics and len(topics) >= 10:
                     logger.info(f"OpenClaw 实时采集成功，共 {len(topics)} 个选题")
+                    self._save_topics(topics)
                     return topics
                 else:
                     logger.warning("OpenClaw 实时采集选题不足，切换到传统方式")
@@ -67,10 +94,11 @@ class TopicCollector:
             logger.warning("传统数据源采集失败，切换到 Claude 备用方案")
             if CLAUDE_AVAILABLE:
                 try:
-                    claude_collector = ClaudeCollector()
+                    claude_collector = ClaudeCollector(user_id=self.user_id)
                     topics = claude_collector.run()
                     if topics:
                         logger.info(f"Claude 备用采集成功，共 {len(topics)} 个选题")
+                        self._save_topics(topics)
                         return topics
                 except Exception as e:
                     logger.error(f"Claude 备用采集失败: {str(e)}")
@@ -129,10 +157,12 @@ class TopicCollector:
         filename = f"topics_{date_str}.json"
         filepath = self.topics_dir / filename
 
+        high_score_count = len([t for t in topics if t.get('total_score', 0) >= 25])
+
         save_json({
             'date': date_str,
             'total_count': len(topics),
-            'high_score_count': len([t for t in topics if t['total_score'] >= 25]),
+            'high_score_count': high_score_count,
             'topics': topics
         }, filepath)
 
@@ -143,7 +173,7 @@ class TopicCollector:
         save_json({
             'date': date_str,
             'total_count': len(topics),
-            'high_score_count': len([t for t in topics if t['total_score'] >= 25]),
+            'high_score_count': high_score_count,
             'topics': topics
         }, latest_path)
 

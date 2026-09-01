@@ -16,7 +16,8 @@ logger = setup_logger('publisher_main', 'publisher.log')
 class ContentPublisher:
     """内容发布器"""
 
-    def __init__(self):
+    def __init__(self, user_id: str = 'dr_k'):
+        self.user_id = user_id
         try:
             self.notion = NotionClient()
             self.notion_available = True
@@ -26,6 +27,11 @@ class ContentPublisher:
 
         self.formatter = WechatFormatter()
         self.exporter = ContentExporter()
+
+        # 使用用户专属数据目录
+        from modules.utils import DATA_DIR
+        self.published_dir = DATA_DIR / 'users' / user_id / 'published'
+        self.published_dir.mkdir(parents=True, exist_ok=True)
 
     def publish_to_notion(self, draft: Dict) -> Dict:
         """发布到 Notion"""
@@ -132,7 +138,7 @@ class ContentPublisher:
 
     def _save_publish_record(self, results: Dict):
         """保存发布记录"""
-        record_file = DATA_DIR / 'published' / 'publish_records.json'
+        record_file = self.published_dir / 'publish_records.json'
 
         # 读取现有记录
         if record_file.exists():

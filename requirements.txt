@@ -1,11 +1,13 @@
-# Web 界面
+# AI Content Factory - 依赖包
+
+# Streamlit 前端
 streamlit==1.31.0
 
-# AI SDK
+# AI APIs
 anthropic==0.18.1
 google-generativeai==0.3.2
 
-# Notion API
+# Notion 发布
 notion-client==2.2.1
 
 # 数据处理
@@ -19,13 +21,27 @@ schedule==1.2.0
 requests==2.31.0
 httpx==0.26.0
 
-# RSS 解析
+# RSS 采集
 feedparser==6.0.11
 
-# HTML 处理
+# HTML 解析
 beautifulsoup4==4.12.3
 lxml==5.1.0
 chardet>=3.0.4
 
-# Markdown 转 HTML
+# Markdown 处理
 markdown==3.5.2
+
+# 图片生成 (新增)
+openai>=1.0.0
+replicate>=0.20.0
+
+# 飞书 API (新增)
+feishu-python-sdk>=1.0.0
+
+# 图片生成 API
+openai>=1.0.0
+replicate>=0.20.0
+
+# 飞书 API
+lark-oapi>=1.2.0

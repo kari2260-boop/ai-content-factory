@@ -27,17 +27,23 @@ logger = setup_logger('generator_main', 'generator.log')
 class ContentGenerator:
     """内容生成器"""
 
-    def __init__(self):
+    def __init__(self, user_id: str = 'dr_k'):
+        self.user_id = user_id
         self.claude = ClaudeClient()
         self.gemini = GeminiClient()
-        self.openclaw = OpenClawBridge()
-        self.drafts_dir = DATA_DIR / 'drafts'
-        self.drafts_dir.mkdir(exist_ok=True)
+        self.openclaw = OpenClawBridge(user_id=user_id)
+
+        # 使用用户专属数据目录
+        from modules.utils import DATA_DIR
+        self.drafts_dir = DATA_DIR / 'users' / user_id / 'drafts'
+        self.drafts_dir.mkdir(parents=True, exist_ok=True)
 
         # 加载书稿结构
         self.book_structure = load_json(BOOK_STRUCTURE_PATH)
 
-    def generate_all_formats(self, topic: Dict, user_opinion: str, use_openclaw: bool = False, selected_formats: List[str] = None) -> Dict:
+    def generate_all_formats(self, topic: Dict, user_opinion: str, use_openclaw: bool = False, selected_formats: List[str] = None,
+                               soul_questions: Dict = None, reference_script: str = "",
+                               recording_transcript: str = "", opening_line: str = "") -> Dict:
         """
         生成所有5种格式的内容
 
@@ -72,17 +78,15 @@ class ContentGenerator:
         # 降级使用 Claude 生成
         logger.info("🤖 使用 Claude 生成内容")
 
-        # 获取 K博士的风格指南（从 OpenClaw workspace）
-        logger.info("步骤 1/6: 读取 K博士风格指南")
+        # 获取用户的风格指南（从 OpenClaw workspace）
+        logger.info("步骤 1/6: 读取用户风格指南")
         context = ""
         if self.openclaw.available:
             try:
-                profile = self.openclaw.get_kari_profile()
+                profile = self.openclaw.get_user_profile()
                 # 简化的上下文，只包含核心方法论
                 context = f"""
-## K博士的核心方法论
-- 人生杠杆 = 四大基石 × 五大杠杆
-- 从弱变强 × 关键决策 = 更理想的自我
+## 用户的核心方法论
 - 风格：温暖有温度、专业但易懂、实践导向
 """
             except:
@@ -112,8 +116,19 @@ class ContentGenerator:
             logger.info(f"步骤 {i}/6: 生成{format_name}")
 
             try:
-                prompt = prompt_func(topic, user_opinion, context)
+                # 视频号文案传入灵魂四问等额外参数
+                if format_key == 'video':
+                    prompt = prompt_func(topic, user_opinion, context,
+                                        soul_questions=soul_questions,
+                                        reference_script=reference_script,
+                                        recording_transcript=recording_transcript,
+                                        opening_line=opening_line)
+                else:
+                    prompt = prompt_func(topic, user_opinion, context)
                 content = self.claude.generate(prompt, max_tokens=max_tokens)
+
+                if not content:
+                    raise ValueError("API 返回空内容")
 
                 results['contents'][format_key] = {
                     'format': format_name,

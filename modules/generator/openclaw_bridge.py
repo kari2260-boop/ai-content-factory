@@ -16,9 +16,11 @@ logger = setup_logger('openclaw_bridge', 'generator.log')
 class OpenClawBridge:
     """OpenClaw 知识库和内容生成桥接"""
 
-    def __init__(self):
+    def __init__(self, user_id: str = 'dr_k'):
+        self.user_id = user_id
         self.available = self._check_openclaw()
-        self.workspace_path = Path.home() / '.openclaw' / 'workspace'
+        # 修改：动态指向用户的 profile 目录
+        self.workspace_path = Path.home() / '.openclaw' / 'workspace' / 'profiles' / user_id
 
     def _check_openclaw(self) -> bool:
         """检查 OpenClaw 是否可用"""
@@ -55,8 +57,8 @@ class OpenClawBridge:
             logger.error(f"读取 {filename} 失败: {str(e)}")
             return ""
 
-    def get_kari_profile(self) -> Dict[str, str]:
-        """获取 Kari 的完整画像"""
+    def get_user_profile(self) -> Dict[str, str]:
+        """获取用户的完整画像"""
         return {
             'user': self._read_workspace_file('USER.md'),
             'memory': self._read_workspace_file('MEMORY.md'),
@@ -210,13 +212,13 @@ class OpenClawBridge:
 """
         }
 
-        prompt = f"""你是 K博士（郭梦娇）的内容生成助手。请根据以下信息，生成一篇{format_names[format_type]}。
+        prompt = f"""你是 {self.user_id} 的内容生成助手。请根据以下信息，生成一篇{format_names[format_type]}。
 
 **重要提示：**
-1. 你已经完整学习了 K博士的风格、方法论和案例库（在 USER.md、MEMORY.md、CONTENT_GUIDE.md 中）
-2. 请严格按照 K博士的风格创作：温暖有温度、专业但易懂、实践导向、结构清晰
-3. 使用 K博士的方法论：人生杠杆、从弱变强、关键决策
-4. 引用 K博士的真实案例和金句库
+1. 你已经完整学习了用户的风格、方法论和案例库（在 USER.md、MEMORY.md、CONTENT_GUIDE.md 中）
+2. 请严格按照用户的风格创作：温暖有温度、专业但易懂、实践导向、结构清晰
+3. 使用用户的方法论和理念
+4. 引用用户的真实案例和金句库
 
 ---
 
@@ -229,7 +231,7 @@ AI评分理由：{topic.get('ai_reason', '无')}
 
 ---
 
-**K博士的核心观点：**
+**用户的核心观点：**
 {user_opinion}
 
 ---
@@ -242,7 +244,7 @@ AI评分理由：{topic.get('ai_reason', '无')}
 ✅ 温暖鼓励、真诚分享（不说教）
 ✅ 专业易懂、有理有据（引用研究和数据）
 ✅ 实践导向、可操作（提供具体方法）
-✅ 真实案例、数据支撑（用 K博士的经历）
+✅ 真实案例、数据支撑（用真实经历）
 ✅ 尊重多元、包容差异
 ✅ 引导思考、启发行动
 ✅ 关注过程、发现优势
@@ -314,13 +316,13 @@ AI评分理由：{topic.get('ai_reason', '无')}
 
 if __name__ == '__main__':
     # 测试
-    bridge = OpenClawBridge()
+    bridge = OpenClawBridge(user_id='dr_k')
 
     if bridge.available:
         print("✅ OpenClaw 可用")
 
         # 测试读取配置
-        profile = bridge.get_kari_profile()
+        profile = bridge.get_user_profile()
         print(f"\n📄 USER.md: {len(profile['user'])} 字符")
         print(f"📄 MEMORY.md: {len(profile['memory'])} 字符")
         print(f"📄 CONTENT_GUIDE.md: {len(profile['content_guide'])} 字符")

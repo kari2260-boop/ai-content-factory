@@ -4,10 +4,10 @@ Claude 打分器
 """
 import os
 from typing import List, Dict
-from anthropic import Anthropic
 
+from modules.llm_client import LLMClient
 from modules.utils import setup_logger
-from modules.config import ANTHROPIC_API_KEY, ANTHROPIC_BASE_URL
+from modules.config import ANTHROPIC_API_KEY, ANTHROPIC_BASE_URL, ANTHROPIC_SCORING_MODEL
 
 logger = setup_logger('scorer', 'collector.log')
 
@@ -19,8 +19,12 @@ class TopicScorer:
         if not ANTHROPIC_API_KEY:
             raise ValueError("未找到 ANTHROPIC_AUTH_TOKEN 环境变量")
 
-        self.client = Anthropic(api_key=ANTHROPIC_API_KEY, base_url=ANTHROPIC_BASE_URL)
-        self.model = "claude-sonnet-4-5-20250929"
+        self.model = ANTHROPIC_SCORING_MODEL
+        self.client = LLMClient(
+            api_key=ANTHROPIC_API_KEY,
+            base_url=ANTHROPIC_BASE_URL,
+            model=self.model,
+        )
 
     def score_topics(self, topics: List[Dict]) -> List[Dict]:
         """批量打分选题"""
@@ -87,18 +91,9 @@ class TopicScorer:
 
 只返回 JSON，不要其他内容。"""
 
-        response = self.client.messages.create(
-            model=self.model,
-            max_tokens=500,
-            messages=[{
-                "role": "user",
-                "content": prompt
-            }]
-        )
-
         # 解析 Claude 返回的 JSON
         import json
-        result_text = response.content[0].text.strip()
+        result_text = self.client.generate(prompt, max_tokens=500).strip()
 
         # 移除可能的 markdown 代码块标记
         if result_text.startswith('```'):

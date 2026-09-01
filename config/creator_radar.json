@@ -1,0 +1,63 @@
+{
+  "timezone": "Asia/Shanghai",
+  "report_time": "08:00",
+  "keywords": [
+    "ADHD",
+    "neurodiversity",
+    "神经多样性",
+    "神经科学",
+    "特殊教育",
+    "注意力缺陷",
+    "自闭症谱系",
+    "个人成长",
+    "不一样的我",
+    "我和社会不一样"
+  ],
+  "target_follower_ranges": [
+    {
+      "label": "0-1万",
+      "min": 0,
+      "max": 10000
+    },
+    {
+      "label": "5万-10万",
+      "min": 50000,
+      "max": 100000
+    }
+  ],
+  "platforms": {
+    "youtube": {
+      "enabled": true,
+      "max_results_per_keyword": 3,
+      "order": "relevance",
+      "published_after_days": 30
+    },
+    "bilibili": {
+      "enabled": true,
+      "max_results_per_keyword": 5,
+      "search_type": "video"
+    },
+    "xiaohongshu": {
+      "enabled": false,
+      "mode": "manual_csv"
+    },
+    "wechat_channels": {
+      "enabled": false,
+      "mode": "manual_csv"
+    },
+    "manual_csv": {
+      "enabled": true,
+      "import_dir": "data/creator_radar/imports"
+    }
+  },
+  "analysis": {
+    "use_llm_if_available": true,
+    "max_text_chars": 3500
+  },
+  "report": {
+    "since_days": 7,
+    "top_n": 20,
+    "min_relevance_score": 4.0,
+    "output_dir": "data/creator_radar/reports"
+  }
+}

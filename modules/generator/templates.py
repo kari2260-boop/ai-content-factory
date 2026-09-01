@@ -45,8 +45,40 @@ DR_K_STYLE = """
 """
 
 
-def get_video_script_prompt(topic: Dict, user_opinion: str, context: str = "") -> str:
+def get_video_script_prompt(topic: Dict, user_opinion: str, context: str = "",
+                            soul_questions: Dict = None, reference_script: str = "",
+                            recording_transcript: str = "", opening_line: str = "") -> str:
     """视频号文案 Prompt（3-5分钟口播）"""
+
+    # 灵魂四问结构
+    soul_section = ""
+    if soul_questions:
+        soul_section = f"""
+## 灵魂四问（决定整体观点方向和人群）
+1. **说给谁听：** {soul_questions.get('audience', '')}
+2. **什么观点：** {soul_questions.get('viewpoint', '')}
+3. **产生什么影响：** {soul_questions.get('impact', '')}
+4. **对立面：** {soul_questions.get('opposition', '')}
+"""
+
+    # 范文参考
+    reference_section = f"""
+## 范文（决定内容结构和语言风格）
+{reference_script}
+""" if reference_script else ""
+
+    # 录音逐字稿
+    transcript_section = f"""
+## 录音逐字稿（提炼具体信息、案例、方法论）
+{recording_transcript}
+""" if recording_transcript else ""
+
+    # 开头基调
+    opening_section = f"""
+## 开头（本篇文案主基调，一字不改）
+{opening_line}
+""" if opening_line else ""
+
     return f"""{DR_K_STYLE}
 
 ## 任务
@@ -57,21 +89,39 @@ def get_video_script_prompt(topic: Dict, user_opinion: str, context: str = "") -
 **摘要：** {topic.get('excerpt', '无')}
 **你的观点：** {user_opinion}
 
+{soul_section}
+{reference_section}
+{transcript_section}
+{opening_section}
 {context}
 
-## 要求
-1. **开头（15秒）**：用一个反常识的问题或故事hook住观众
-2. **主体（2-3分钟）**：
-   - 讲1-2个真实案例（可以虚构但要真实感）
-   - 提出你的核心观点
-   - 给出3个可操作的建议
-3. **结尾（30秒）**：金句总结 + 引导互动
+## 好文案标准
+**核心原则：尽可能少的字数 + 尽可能多的信息点（高信息密度）**
 
-## 格式
-- 口语化，像面对面聊天
-- 每段不超过3句话
-- 标注【停顿】【强调】等提示
-- 总字数：800-1200字
+1. **灵魂四问驱动全文**
+   - 始终对准目标人群（说给谁听）
+   - 观点鲜明，有对立面，制造张力
+   - 每句话都要推动影响力
+
+2. **结构要求**
+   - 开头：保持原样，一字不改（如提供）
+   - 主体：案例→方法论→观点，从逐字稿中提炼放入对应位置
+   - 结尾：金句 + 互动引导
+
+3. **信息密度标准**
+   - 删除所有废话、过渡语、套话
+   - 每句话必须承载一个信息点
+   - 案例要具体：人物+数字+结果
+   - 方法论要可操作：动词+对象+标准
+
+4. **语言风格（参照范文）**
+   - 口语化，像面对面聊天
+   - 每段不超过3句话
+   - 标注【停顿】【强调】等提示
+
+5. **格式**
+   - 总字数：800-1200字
+   - 分镜标注时间节点
 
 直接输出文案，不要其他说明。"""
 

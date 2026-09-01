@@ -20,10 +20,11 @@ logger = setup_logger('workflow', 'workflow.log')
 class DailyWorkflow:
     """每日自动化工作流"""
 
-    def __init__(self):
-        self.collector = TopicCollector()
-        self.openclaw = OpenClawBridge()
-        self.publisher = ContentPublisher()
+    def __init__(self, user_id: str = 'dr_k'):
+        self.user_id = user_id
+        self.collector = TopicCollector(user_id=user_id)
+        self.openclaw = OpenClawBridge(user_id=user_id)
+        self.publisher = ContentPublisher(user_id=user_id)
 
         # 工作流状态文件
         self.state_file = DATA_DIR / 'workflow_state.json'
@@ -46,7 +47,7 @@ class DailyWorkflow:
             logger.info("\n📋 推荐选题（前5个）:")
             for i, topic in enumerate(high_score[:5], 1):
                 logger.info(f"  {i}. {topic['title']}")
-                logger.info(f"     总分: {topic.get('total_score', 0)}/40")
+                logger.info(f"     总分: {topic.get('total_score', 0)}/50")
                 logger.info(f"     建议角度: {', '.join(topic.get('suggested_angles', []))}")
                 logger.info("")
 
@@ -124,7 +125,8 @@ class DailyWorkflow:
 
                 # 保存草稿
                 draft_id = f"draft_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{topic['title'][:20]}"
-                draft_file = DATA_DIR / 'drafts' / f"{draft_id}.json"
+                draft_file = DATA_DIR / 'users' / self.user_id / 'drafts' / f"{draft_id}.json"
+                draft_file.parent.mkdir(parents=True, exist_ok=True)
 
                 import json
                 with open(draft_file, 'w', encoding='utf-8') as f:
@@ -172,7 +174,8 @@ class DailyWorkflow:
 
         try:
             # 获取最新的草稿
-            drafts_dir = DATA_DIR / 'drafts'
+            drafts_dir = DATA_DIR / 'users' / self.user_id / 'drafts'
+            drafts_dir.mkdir(parents=True, exist_ok=True)
             draft_files = sorted(drafts_dir.glob('draft_*.json'), key=lambda x: x.stat().st_mtime, reverse=True)
 
             if not draft_files:
