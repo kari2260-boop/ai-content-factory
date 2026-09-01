@@ -3,10 +3,15 @@
 """
 import os
 from pathlib import Path
-from dotenv import load_dotenv
+
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    load_dotenv = None
 
 # 加载环境变量
-load_dotenv()
+if load_dotenv:
+    load_dotenv()
 
 # Notion 配置
 NOTION_TOKEN = os.getenv('NOTION_TOKEN')

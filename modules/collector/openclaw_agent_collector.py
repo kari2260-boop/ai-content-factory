@@ -8,6 +8,7 @@ from typing import List, Dict
 from datetime import datetime
 
 from modules.utils import setup_logger, save_json, get_date_str, DATA_DIR
+from modules.collector.scorer import TopicScorer
 
 logger = setup_logger('openclaw_agent_collector', 'collector.log')
 
@@ -15,15 +16,17 @@ logger = setup_logger('openclaw_agent_collector', 'collector.log')
 class OpenClawAgentCollector:
     """通过 OpenClaw Agent 本地执行采集"""
 
-    def __init__(self):
-        self.topics_dir = DATA_DIR / 'topics'
-        self.topics_dir.mkdir(exist_ok=True)
+    def __init__(self, user_id: str = 'dr_k'):
+        self.user_id = user_id
+        self.topics_dir = DATA_DIR / 'users' / user_id / 'topics'
+        self.topics_dir.mkdir(parents=True, exist_ok=True)
+        self.scorer = TopicScorer()
 
     def collect_via_agent(self) -> List[Dict]:
         """通过 OpenClaw Agent 采集选题"""
         logger.info("通过 OpenClaw Agent 本地执行选题采集")
 
-        task_prompt = """请帮我采集今日（2026年2月19日）教育领域的最新热点选题。
+        task_prompt = """请帮我采集今日教育领域的最新热点选题。
 
 任务要求：
 1. 数据源：知乎教育热榜、微博教育热搜、今日头条教育频道、百度热搜教育相关
@@ -36,9 +39,20 @@ class OpenClawAgentCollector:
 重要：访问实时数据源，确保是今天最新热点，直接返回JSON数组。"""
 
         try:
-            # 使用 openclaw agent --local 本地执行
+            # 使用专用采集 agent，避免落到主会话并因默认模型超时
             result = subprocess.run(
-                ['openclaw', 'agent', '--local', '--json', '-m', task_prompt],
+                [
+                    'openclaw',
+                    'agent',
+                    '--local',
+                    '--agent',
+                    'topic-collector-openai',
+                    '--json',
+                    '--timeout',
+                    '180',
+                    '-m',
+                    task_prompt,
+                ],
                 capture_output=True,
                 text=True,
                 timeout=120
@@ -113,13 +127,16 @@ class OpenClawAgentCollector:
         # 采集选题
         topics = self.collect_via_agent()
 
-        if not topics or len(topics) < 5:
+        if not topics:
             logger.warning(f"采集到的选题不足（{len(topics) if topics else 0}个）")
             return []
 
         # 添加时间戳
         for topic in topics:
             topic['collected_at'] = datetime.now().isoformat()
+
+        if any('total_score' not in topic for topic in topics):
+            topics = self.scorer.score_topics_fast(topics)
 
         # 保存结果
         self._save_topics(topics)
@@ -139,6 +156,7 @@ class OpenClawAgentCollector:
         save_json({
             'date': date_str,
             'total_count': len(topics),
+            'high_score_count': len([t for t in topics if t.get('total_score', 0) >= 25]),
             'topics': topics
         }, filepath)
 
@@ -147,6 +165,7 @@ class OpenClawAgentCollector:
         save_json({
             'date': date_str,
             'total_count': len(topics),
+            'high_score_count': len([t for t in topics if t.get('total_score', 0) >= 25]),
             'topics': topics
         }, latest_path)
 

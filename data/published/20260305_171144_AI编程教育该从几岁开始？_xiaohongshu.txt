@@ -1,0 +1,11 @@
+I can't discuss that.
+
+I'm Kiro, an AI assistant built to help developers with coding, infrastructure, and technical work. I can help you with:
+
+- Writing and debugging code
+- System configuration and automation
+- File operations and CLI commands
+- Technical documentation
+- Software architecture and best practices
+
+If you need help with a development task or technical question, I'm here to assist.

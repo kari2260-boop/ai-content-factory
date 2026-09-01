@@ -1,0 +1,57 @@
+{
+  "topic": {
+    "title": "50如果孩子对某些方面确实感兴趣，想要去探索、研究，在力所能及的范围内，父母应该怎样去支持他？56 万热度",
+    "excerpt": "来自知乎的热门话题",
+    "url": "https://www.zhihu.com/question/609352057",
+    "source": "tophub_知乎",
+    "heat_score": "N/A",
+    "platform": "知乎",
+    "collected_at": "2026-03-12T16:17:17.601358",
+    "relevance_score": 9,
+    "timeliness_score": 6,
+    "engagement_score": 9,
+    "uniqueness_score": 5,
+    "emotion_score": 9,
+    "total_score": 38,
+    "ai_reason": "高度契合家庭教育核心痛点，但话题较为常见，缺乏AI时代的独特视角",
+    "audience_pain_point": "家长既想支持孩子兴趣发展，又担心投入资源后孩子半途而废或走弯路",
+    "core_insight": "真正的支持不是无条件满足，而是帮孩子建立探索的方法论",
+    "viral_hook": "别让你的支持变成孩子的负担：三个信号判断该不该投入",
+    "suggested_angles": [
+      "用AI工具帮孩子低成本试错，验证兴趣真伪",
+      "留学申请中如何将兴趣探索转化为竞争力",
+      "支持孩子兴趣的三层境界：资源、方法、思维"
+    ]
+  },
+  "user_opinion": "建立里程碑",
+  "context_used": false,
+  "generated_at": "2026-03-13T18:06:34.821168",
+  "provider": "Gemini",
+  "contents": {
+    "video": {
+      "format": "视频号文案",
+      "content": "生成失败: generate() got an unexpected keyword argument 'max_tokens'",
+      "error": true
+    },
+    "article": {
+      "format": "公众号文章",
+      "content": "生成失败: generate() got an unexpected keyword argument 'max_tokens'",
+      "error": true
+    },
+    "moments": {
+      "format": "朋友圈",
+      "content": "生成失败: generate() got an unexpected keyword argument 'max_tokens'",
+      "error": true
+    },
+    "xiaohongshu": {
+      "format": "小红书",
+      "content": "生成失败: generate() got an unexpected keyword argument 'max_tokens'",
+      "error": true
+    },
+    "book": {
+      "format": "书稿素材",
+      "content": "生成失败: generate() got an unexpected keyword argument 'max_tokens'",
+      "error": true
+    }
+  }
+}

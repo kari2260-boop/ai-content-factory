@@ -1,0 +1,57 @@
+{
+  "topic": {
+    "title": "10有没有人试过把全世界已有的佛经喂给 AI 看看最后能不能生成一个赛博在世佛祖?206 万热度",
+    "excerpt": "来自知乎的热门话题",
+    "url": "https://www.zhihu.com/question/2018783635805860978",
+    "source": "tophub_知乎",
+    "heat_score": "N/A",
+    "platform": "知乎",
+    "collected_at": "2026-05-15T16:09:50.482733",
+    "relevance_score": 5,
+    "timeliness_score": 5,
+    "engagement_score": 5,
+    "uniqueness_score": 5,
+    "emotion_score": 5,
+    "total_score": 25,
+    "ai_reason": "打分失败，使用默认分数",
+    "suggested_angles": [],
+    "audience_pain_point": "未识别"
+  },
+  "user_opinion": "期待新的惊喜",
+  "context_used": false,
+  "generated_at": "2026-05-18T16:03:04.593775",
+  "provider": "Gemini",
+  "contents": {
+    "video": {
+      "format": "视频号文案",
+      "content": "",
+      "word_count": 0,
+      "generated_at": "2026-05-18T16:03:22.164844"
+    },
+    "article": {
+      "format": "公众号文章",
+      "content": "好的，请看这篇为你量身打造的深度文章。\n\n---\n\n### AI能修成“佛”吗？教育的答案更惊人\n\n“K博士，Sora一出来，我觉得我学了四年的电影白学了。”\n\n电话那头，我一个已经被纽约大学电影学院录取（NYU Tisch）的学生小A，声音里满是挫败感。“一个指令，AI就能生成媲美好莱坞的",
+      "word_count": 146,
+      "generated_at": "2026-05-18T16:03:58.338433"
+    },
+    "moments": {
+      "format": "朋友圈",
+      "content": "看到这个热门问题，我第一反应是兴奋，而不是担忧。\n\n这就像我们",
+      "word_count": 31,
+      "generated_at": "2026-05-18T16:04:08.174256"
+    },
+    "xiaohongshu": {
+      "format": "小红书",
+      "content": "🤯AI能修成“赛博佛祖”吗？\n这个问题最近在网上有200多万热度，太有意思了！",
+      "word_count": 39,
+      "generated_at": "2026-05-18T16:04:20.152986"
+    },
+    "book": {
+      "format": "书稿素材",
+      "content": "好的，这是为你准备的书稿素材。\n\n---\n\n### **“赛博佛祖”：AI时代的终极教育叩问**\n\n在知乎上，有一个超过200万人关注的问题：“把全世界已有的",
+      "word_count": 79,
+      "generated_at": "2026-05-18T16:04:38.498823",
+      "chapter_id": "ch01"
+    }
+  }
+}

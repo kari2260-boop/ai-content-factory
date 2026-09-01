@@ -1,0 +1,57 @@
+{
+  "topic": {
+    "title": "10有没有人试过把全世界已有的佛经喂给 AI 看看最后能不能生成一个赛博在世佛祖?206 万热度",
+    "excerpt": "来自知乎的热门话题",
+    "url": "https://www.zhihu.com/question/2018783635805860978",
+    "source": "tophub_知乎",
+    "heat_score": "N/A",
+    "platform": "知乎",
+    "collected_at": "2026-05-15T16:09:50.482733",
+    "relevance_score": 5,
+    "timeliness_score": 5,
+    "engagement_score": 5,
+    "uniqueness_score": 5,
+    "emotion_score": 5,
+    "total_score": 25,
+    "ai_reason": "打分失败，使用默认分数",
+    "suggested_angles": [],
+    "audience_pain_point": "未识别"
+  },
+  "user_opinion": "期待新的惊喜\n\n【修改要求】\n字数和要求都没达到",
+  "context_used": false,
+  "generated_at": "2026-05-18T16:06:00.750789",
+  "provider": "Gemini",
+  "contents": {
+    "video": {
+      "format": "视频号文案",
+      "content": "",
+      "word_count": 0,
+      "generated_at": "2026-05-18T16:06:19.025801"
+    },
+    "article": {
+      "format": "公众号文章",
+      "content": "好的，请看这篇深度文章。\n\n---\n\n# AI能算出佛法，却算不出人心\n\n大家好，我是K博士郭梦娇。\n\n在我服务的超过15万个家庭中，我见过一个非常普遍的场景：一位焦虑的母亲，在我面前摊开一张A4纸，上面密密麻麻地写满了她10岁儿子的日程表。周一学编程，周二练钢琴，周三奥数，周四",
+      "word_count": 140,
+      "generated_at": "2026-05-18T16:06:48.016078"
+    },
+    "moments": {
+      "format": "朋友圈",
+      "content": "最近朋友圈热议，如果把全世界的佛经都喂给AI，",
+      "word_count": 23,
+      "generated_at": "2026-05-18T16:06:57.044946"
+    },
+    "xiaohongshu": {
+      "format": "小红书",
+      "content": "赛博佛祖，会是AI给教育的终极答案吗？🤔\n\n大家好，我是宾大教育学博士K. 最近看到一个",
+      "word_count": 44,
+      "generated_at": "2026-05-18T16:07:08.403372"
+    },
+    "book": {
+      "format": "书稿素材",
+      "content": "",
+      "word_count": 0,
+      "generated_at": "2026-05-18T16:07:23.803316",
+      "chapter_id": "ch01"
+    }
+  }
+}

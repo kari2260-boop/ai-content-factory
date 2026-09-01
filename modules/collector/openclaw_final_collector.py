@@ -7,6 +7,7 @@ from typing import List, Dict
 from datetime import datetime
 
 from modules.utils import setup_logger, save_json, get_date_str, DATA_DIR
+from modules.collector.scorer import TopicScorer
 
 logger = setup_logger('openclaw_final_collector', 'collector.log')
 
@@ -14,9 +15,11 @@ logger = setup_logger('openclaw_final_collector', 'collector.log')
 class OpenClawFinalCollector:
     """通过 OpenClaw Agent web_search 采集实时热点"""
 
-    def __init__(self):
-        self.topics_dir = DATA_DIR / 'topics'
-        self.topics_dir.mkdir(exist_ok=True)
+    def __init__(self, user_id: str = 'dr_k'):
+        self.user_id = user_id
+        self.topics_dir = DATA_DIR / 'users' / user_id / 'topics'
+        self.topics_dir.mkdir(parents=True, exist_ok=True)
+        self.scorer = TopicScorer()
 
     def collect_via_agent(self) -> List[Dict]:
         """通过 OpenClaw Agent 采集选题"""
@@ -50,7 +53,18 @@ class OpenClawFinalCollector:
 
         try:
             result = subprocess.run(
-                ['openclaw', 'agent', '--agent', 'main', '--local', '--json', '-m', task_prompt],
+                [
+                    'openclaw',
+                    'agent',
+                    '--local',
+                    '--agent',
+                    'topic-collector-openai',
+                    '--json',
+                    '--timeout',
+                    '180',
+                    '-m',
+                    task_prompt,
+                ],
                 capture_output=True,
                 text=True,
                 timeout=120
@@ -126,13 +140,16 @@ class OpenClawFinalCollector:
         # 采集选题
         topics = self.collect_via_agent()
 
-        if not topics or len(topics) < 10:
+        if not topics:
             logger.warning(f"采集到的选题不足（{len(topics) if topics else 0}个）")
             return []
 
         # 添加时间戳
         for topic in topics:
             topic['collected_at'] = datetime.now().isoformat()
+
+        if any('total_score' not in topic for topic in topics):
+            topics = self.scorer.score_topics_fast(topics)
 
         # 保存结果
         self._save_topics(topics)
@@ -150,16 +167,18 @@ class OpenClawFinalCollector:
         save_json({
             'date': date_str,
             'total_count': len(topics),
+            'high_score_count': len([t for t in topics if t.get('total_score', 0) >= 25]),
             'topics': topics
         }, self.topics_dir / f"topics_{date_str}.json")
 
         save_json({
             'date': date_str,
             'total_count': len(topics),
+            'high_score_count': len([t for t in topics if t.get('total_score', 0) >= 25]),
             'topics': topics
         }, self.topics_dir / 'latest.json')
 
-        logger.info(f"选题已保存")
+        logger.info(f"选题已保存到内容工厂用户目录: {self.topics_dir}")
 
 
 if __name__ == '__main__':

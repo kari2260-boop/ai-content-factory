@@ -9,6 +9,20 @@ from datetime import datetime
 from modules.collector.main import TopicCollector
 from modules.utils import setup_logger
 
+try:
+    from modules.collector.openclaw_final_collector import OpenClawFinalCollector
+    OPENCLAW_FINAL_AVAILABLE = True
+except Exception:
+    OpenClawFinalCollector = None
+    OPENCLAW_FINAL_AVAILABLE = False
+
+try:
+    from modules.collector.openclaw_agent_collector import OpenClawAgentCollector
+    OPENCLAW_AGENT_AVAILABLE = True
+except Exception:
+    OpenClawAgentCollector = None
+    OPENCLAW_AGENT_AVAILABLE = False
+
 logger = setup_logger('scheduler', 'scheduler.log')
 
 
@@ -19,19 +33,36 @@ def daily_collection_task():
     logger.info("=" * 60)
 
     try:
-        collector = TopicCollector()
-        topics = collector.run()
+        topics = []
+        if OPENCLAW_FINAL_AVAILABLE:
+            try:
+                logger.info("优先使用 OpenClaw Final 采集器")
+                topics = OpenClawFinalCollector(user_id='dr_k').run()
+            except Exception as e:
+                logger.error(f"OpenClaw Final 采集失败: {str(e)}")
+
+        if not topics and OPENCLAW_AGENT_AVAILABLE:
+            try:
+                logger.info("回退使用 OpenClaw Agent 采集器")
+                topics = OpenClawAgentCollector(user_id='dr_k').run()
+            except Exception as e:
+                logger.error(f"OpenClaw Agent 采集失败: {str(e)}")
+
+        if not topics:
+            logger.info("OpenClaw 采集未成功，回退到传统 TopicCollector")
+            collector = TopicCollector()
+            topics = collector.run(use_openclaw=False, ai_scoring=False)
 
         logger.info(f"✅ 每日选题采集完成，共 {len(topics)} 个选题")
 
         # 统计高分选题
-        high_score = [t for t in topics if t['total_score'] >= 25]
+        high_score = [t for t in topics if t.get('total_score', 0) >= 25]
         logger.info(f"📊 高分选题（>=25分）: {len(high_score)} 个")
 
         # 打印前3个推荐选题
         logger.info("\n推荐选题（前3个）:")
         for i, topic in enumerate(high_score[:3], 1):
-            logger.info(f"{i}. {topic['title']} (总分: {topic['total_score']})")
+            logger.info(f"{i}. {topic['title']} (总分: {topic.get('total_score', 0)})")
 
     except Exception as e:
         logger.error(f"❌ 每日选题采集失败: {str(e)}")

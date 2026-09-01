@@ -1,14 +1,19 @@
 """
 OpenClaw 内容生成桥接 - 升级版
 直接调用 OpenClaw 生成 K博士风格的5种格式内容
+支持远程 Gateway（如 Mac Mini 上的 OpenClaw）
 """
 import subprocess
 import json
 import os
+import shutil
+import re
+import requests
 from typing import Dict, Optional
 from pathlib import Path
 
 from modules.utils import setup_logger
+from modules.config import OPENCLAW_GATEWAY_URL
 
 logger = setup_logger('openclaw_bridge', 'generator.log')
 
@@ -16,32 +21,53 @@ logger = setup_logger('openclaw_bridge', 'generator.log')
 class OpenClawBridge:
     """OpenClaw 知识库和内容生成桥接"""
 
-    def __init__(self):
-        self.available = self._check_openclaw()
-        self.workspace_path = Path.home() / '.openclaw' / 'workspace'
+    def __init__(self, user_id: str = 'dr_k'):
+        self.user_id = user_id
+        # 远程 Gateway HTTP URL（ws:// → http://）
+        self.gateway_http_url = OPENCLAW_GATEWAY_URL.replace('ws://', 'http://').replace('wss://', 'https://')
+        self.status = self._check_openclaw()
+        self.available = bool(self.status.get('gateway_reachable'))
+        self.workspace_path = Path.home() / '.openclaw' / 'workspace' / 'profiles' / user_id
 
-    def _check_openclaw(self) -> bool:
-        """检查 OpenClaw 是否可用"""
-        try:
-            result = subprocess.run(
-                ['openclaw', 'gateway', 'health'],
-                capture_output=True,
-                text=True,
-                timeout=15
-            )
-            if result.returncode == 0:
-                logger.info("✅ OpenClaw 网关运行正常")
-                return True
-            else:
-                logger.warning("⚠️ OpenClaw 网关未运行")
-                return False
+    def _check_openclaw(self) -> Dict[str, object]:
+        """通过 HTTP 检测远程 Gateway 是否可达。"""
+        url = self.gateway_http_url
+        logger.info(f"🔍 检测 OpenClaw Gateway: {url}")
 
-        except subprocess.TimeoutExpired:
-            logger.warning("⚠️ OpenClaw 检查超时（可能正在启动）")
-            return False
-        except Exception as e:
-            logger.warning(f"⚠️ OpenClaw 检查失败: {str(e)}")
-            return False
+        # 尝试常见的健康检查端点
+        for endpoint in ['/health', '/api/health', '/status', '/']:
+            try:
+                resp = requests.get(f"{url}{endpoint}", timeout=5)
+                if resp.status_code < 500:
+                    logger.info(f"✅ OpenClaw Gateway 可达: {url}{endpoint} ({resp.status_code})")
+                    return {
+                        "installed": True,
+                        "service_running": True,
+                        "gateway_reachable": True,
+                        "agent_active": True,
+                        "label": "运行中",
+                        "detail": f"远程 Gateway 正常 ({url})",
+                        "raw": "",
+                    }
+            except requests.exceptions.ConnectionError:
+                continue
+            except Exception:
+                continue
+
+        logger.warning(f"⚠️ OpenClaw Gateway 不可达: {url}")
+        return {
+            "installed": False,
+            "service_running": False,
+            "gateway_reachable": False,
+            "agent_active": False,
+            "label": "未运行",
+            "detail": f"无法连接到 {url}，请确认 Mac Mini 上的 OpenClaw 已启动",
+            "raw": "",
+        }
+
+    def get_status(self) -> Dict[str, object]:
+        """获取可展示的状态摘要。"""
+        return self.status
 
     def _read_workspace_file(self, filename: str) -> str:
         """读取 OpenClaw workspace 文件"""
@@ -55,8 +81,8 @@ class OpenClawBridge:
             logger.error(f"读取 {filename} 失败: {str(e)}")
             return ""
 
-    def get_kari_profile(self) -> Dict[str, str]:
-        """获取 Kari 的完整画像"""
+    def get_user_profile(self) -> Dict[str, str]:
+        """获取用户的完整画像"""
         return {
             'user': self._read_workspace_file('USER.md'),
             'memory': self._read_workspace_file('MEMORY.md'),
@@ -88,40 +114,26 @@ class OpenClawBridge:
             }
 
         try:
-            # 构建 prompt
             prompt = self._build_prompt(topic, user_opinion, format_type)
+            logger.info(f"🚀 使用远程 OpenClaw 生成 {format_type} 格式内容...")
 
-            logger.info(f"🚀 使用 OpenClaw 生成 {format_type} 格式内容...")
-
-            # 调用 OpenClaw agent
-            # 使用 memory 命令来利用 workspace 中的信息
-            result = subprocess.run(
-                [
-                    'openclaw', 'agent',
-                    '--message', prompt,
-                    '--agent', 'main',
-                    '--json'
-                ],
-                capture_output=True,
-                text=True,
-                timeout=120  # 2分钟超时
+            # 调用远程 Gateway API
+            resp = requests.post(
+                f"{self.gateway_http_url}/api/chat",
+                json={"message": prompt, "stream": False},
+                timeout=120
             )
 
-            if result.returncode != 0:
-                logger.error(f"❌ OpenClaw 生成失败: {result.stderr}")
+            if resp.status_code != 200:
+                logger.error(f"❌ OpenClaw API 返回 {resp.status_code}")
                 return {
                     'error': True,
-                    'content': f'生成失败: {result.stderr}',
+                    'content': f'API 返回错误: {resp.status_code}',
                     'word_count': 0
                 }
 
-            # 解析输出
-            try:
-                output = json.loads(result.stdout)
-                content = output.get('response', output.get('message', ''))
-            except json.JSONDecodeError:
-                # 如果不是 JSON，直接使用文本输出
-                content = result.stdout.strip()
+            result = resp.json()
+            content = result.get('response', result.get('message', result.get('content', '')))
 
             if not content:
                 logger.error("❌ OpenClaw 返回空内容")
@@ -132,16 +144,15 @@ class OpenClawBridge:
                 }
 
             logger.info(f"✅ {format_type} 格式内容生成成功 ({len(content)} 字)")
-
             return {
                 'error': False,
                 'content': content,
                 'word_count': len(content),
                 'provider': 'OpenClaw',
-                'model': 'main-agent'
+                'model': 'remote-gateway'
             }
 
-        except subprocess.TimeoutExpired:
+        except requests.exceptions.Timeout:
             logger.error(f"❌ OpenClaw 生成超时 ({format_type})")
             return {
                 'error': True,
@@ -194,11 +205,30 @@ class OpenClawBridge:
 """,
             'xiaohongshu': """
 **格式要求：**
-- 总字数：800-1000字
-- 结构：标题(带emoji) → 开头(痛点或场景) → 正文(3-5个要点，用序号) → 总结(金句或行动建议) → 话题标签
-- 多用短句，易于阅读
-- 每个要点用emoji标注
+- 总字数：500-800字
+- 结构：标题(尽量短，适合封面) → 开头(痛点/反差/结论) → 正文(3-5个要点，每个要点有小标题) → 总结(金句或行动建议) → 话题标签
+- 多用短句，易于阅读，适合拆成图文卡片
+- 每个要点都要能单独做一张图文卡
 - 话题标签3-5个
+
+**输出格式：**
+### 封面标题
+一句话标题，20字内。
+
+### 01 误区
+2-4句，讲大家最常见的理解偏差。
+
+### 02 核心判断
+2-4句，直接给出你的核心观点。
+
+### 03 方法
+3个小点，每个小点2-3句。
+
+### 04 案例/清单
+2-3个具体例子或检查清单。
+
+### 05 结尾
+1-2句总结 + 互动提问 + 话题标签。
 """,
             'book': """
 **格式要求：**
@@ -210,13 +240,13 @@ class OpenClawBridge:
 """
         }
 
-        prompt = f"""你是 K博士（郭梦娇）的内容生成助手。请根据以下信息，生成一篇{format_names[format_type]}。
+        prompt = f"""你是 {self.user_id} 的内容生成助手。请根据以下信息，生成一篇{format_names[format_type]}。
 
 **重要提示：**
-1. 你已经完整学习了 K博士的风格、方法论和案例库（在 USER.md、MEMORY.md、CONTENT_GUIDE.md 中）
-2. 请严格按照 K博士的风格创作：温暖有温度、专业但易懂、实践导向、结构清晰
-3. 使用 K博士的方法论：人生杠杆、从弱变强、关键决策
-4. 引用 K博士的真实案例和金句库
+1. 你已经完整学习了用户的风格、方法论和案例库（在 USER.md、MEMORY.md、CONTENT_GUIDE.md 中）
+2. 请严格按照用户的风格创作：温暖有温度、专业但易懂、实践导向、结构清晰
+3. 使用用户的方法论和理念
+4. 引用用户的真实案例和金句库
 
 ---
 
@@ -229,7 +259,7 @@ AI评分理由：{topic.get('ai_reason', '无')}
 
 ---
 
-**K博士的核心观点：**
+**用户的核心观点：**
 {user_opinion}
 
 ---
@@ -242,7 +272,7 @@ AI评分理由：{topic.get('ai_reason', '无')}
 ✅ 温暖鼓励、真诚分享（不说教）
 ✅ 专业易懂、有理有据（引用研究和数据）
 ✅ 实践导向、可操作（提供具体方法）
-✅ 真实案例、数据支撑（用 K博士的经历）
+✅ 真实案例、数据支撑（用真实经历）
 ✅ 尊重多元、包容差异
 ✅ 引导思考、启发行动
 ✅ 关注过程、发现优势
@@ -314,13 +344,13 @@ AI评分理由：{topic.get('ai_reason', '无')}
 
 if __name__ == '__main__':
     # 测试
-    bridge = OpenClawBridge()
+    bridge = OpenClawBridge(user_id='dr_k')
 
     if bridge.available:
         print("✅ OpenClaw 可用")
 
         # 测试读取配置
-        profile = bridge.get_kari_profile()
+        profile = bridge.get_user_profile()
         print(f"\n📄 USER.md: {len(profile['user'])} 字符")
         print(f"📄 MEMORY.md: {len(profile['memory'])} 字符")
         print(f"📄 CONTENT_GUIDE.md: {len(profile['content_guide'])} 字符")

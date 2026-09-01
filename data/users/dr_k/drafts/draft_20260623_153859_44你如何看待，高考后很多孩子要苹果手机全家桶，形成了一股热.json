@@ -1,0 +1,53 @@
+{
+  "topic": {
+    "title": "44你如何看待，高考后很多孩子要苹果手机全家桶，形成了一股热潮？56 万热度",
+    "excerpt": "来自知乎的热门话题",
+    "url": "https://www.zhihu.com/question/2048784446720161578",
+    "source": "tophub_知乎",
+    "heat_score": "N/A",
+    "platform": "知乎",
+    "collected_at": "2026-06-23T15:07:04.962775",
+    "relevance_score": 6,
+    "timeliness_score": 6,
+    "engagement_score": 7,
+    "uniqueness_score": 5,
+    "emotion_score": 6,
+    "total_score": 30,
+    "ai_reason": "快速本地评分，未调用 AI",
+    "audience_pain_point": "待生成内容时进一步识别",
+    "core_insight": "",
+    "viral_hook": "",
+    "suggested_angles": []
+  },
+  "user_opinion": "憋坏了，把高考当成了KPI",
+  "context_used": false,
+  "generated_at": "2026-06-23T15:38:10.011850",
+  "provider": "Claude",
+  "contents": {
+    "video": {
+      "format": "视频号文案",
+      "content": "生成失败: Connection error.",
+      "error": true
+    },
+    "article": {
+      "format": "公众号文章",
+      "content": "生成失败: Connection error.",
+      "error": true
+    },
+    "moments": {
+      "format": "朋友圈",
+      "content": "生成失败: Connection error.",
+      "error": true
+    },
+    "xiaohongshu": {
+      "format": "小红书",
+      "content": "生成失败: Connection error.",
+      "error": true
+    },
+    "book": {
+      "format": "书稿素材",
+      "content": "生成失败: Connection error.",
+      "error": true
+    }
+  }
+}

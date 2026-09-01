@@ -27,12 +27,16 @@ logger = setup_logger('generator_main', 'generator.log')
 class ContentGenerator:
     """内容生成器"""
 
-    def __init__(self):
+    def __init__(self, user_id: str = 'dr_k'):
+        self.user_id = user_id
         self.claude = ClaudeClient()
-        self.gemini = GeminiClient()
-        self.openclaw = OpenClawBridge()
-        self.drafts_dir = DATA_DIR / 'drafts'
-        self.drafts_dir.mkdir(exist_ok=True)
+        self.gemini = GeminiClient()  # 重新启用 Gemini
+        self.openclaw = OpenClawBridge(user_id=user_id)
+
+        # 使用用户专属数据目录
+        from modules.utils import DATA_DIR
+        self.drafts_dir = DATA_DIR / 'users' / user_id / 'drafts'
+        self.drafts_dir.mkdir(parents=True, exist_ok=True)
 
         # 加载书稿结构
         self.book_structure = load_json(BOOK_STRUCTURE_PATH)
@@ -69,20 +73,28 @@ class ContentGenerator:
                 logger.error(f"❌ OpenClaw 生成失败: {str(e)}")
                 logger.info("⚠️ 降级使用 Claude 生成")
 
-        # 降级使用 Claude 生成
-        logger.info("🤖 使用 Claude 生成内容")
+        # 降级使用 Claude 或 Gemini 生成
+        use_claude = self.claude.available
+        use_gemini = self.gemini.available
 
-        # 获取 K博士的风格指南（从 OpenClaw workspace）
-        logger.info("步骤 1/6: 读取 K博士风格指南")
+        if use_claude:
+            logger.info("🤖 使用 Claude 生成内容")
+            ai_client = self.claude
+        elif use_gemini:
+            logger.info("🤖 使用 Gemini 生成内容")
+            ai_client = self.gemini
+        else:
+            raise RuntimeError("没有可用的 AI API，请配置 Claude 或 Gemini API")
+
+        # 获取用户的风格指南（从 OpenClaw workspace）
+        logger.info("步骤 1/6: 读取用户风格指南")
         context = ""
         if self.openclaw.available:
             try:
-                profile = self.openclaw.get_kari_profile()
+                profile = self.openclaw.get_user_profile()
                 # 简化的上下文，只包含核心方法论
                 context = f"""
-## K博士的核心方法论
-- 人生杠杆 = 四大基石 × 五大杠杆
-- 从弱变强 × 关键决策 = 更理想的自我
+## 用户的核心方法论
 - 风格：温暖有温度、专业但易懂、实践导向
 """
             except:
@@ -93,7 +105,7 @@ class ContentGenerator:
             'user_opinion': user_opinion,
             'context_used': bool(context),
             'generated_at': datetime.now().isoformat(),
-            'provider': 'Claude',
+            'provider': 'Claude' if use_claude else 'Gemini',
             'contents': {}
         }
 
@@ -113,7 +125,7 @@ class ContentGenerator:
 
             try:
                 prompt = prompt_func(topic, user_opinion, context)
-                content = self.claude.generate(prompt, max_tokens=max_tokens)
+                content = ai_client.generate(prompt, max_tokens=max_tokens)
 
                 results['contents'][format_key] = {
                     'format': format_name,
@@ -149,13 +161,24 @@ class ContentGenerator:
         return results
 
     def _classify_chapter(self, content: str) -> str:
-        """使用 Claude 对书稿素材进行章节分类"""
+        """使用 AI 对书稿素材进行章节分类"""
         if not self.book_structure:
             return 'ch01'  # 默认第一章
 
         try:
+            # 选择可用的 AI 客户端
+            ai_client = None
+            if self.claude.available:
+                ai_client = self.claude
+            elif self.gemini.available:
+                ai_client = self.gemini
+
+            if not ai_client:
+                logger.warning("没有可用的 AI API，使用默认章节")
+                return 'ch01'
+
             prompt = get_chapter_classification_prompt(content, self.book_structure)
-            chapter_id = self.claude.generate(prompt, max_tokens=50).strip()
+            chapter_id = ai_client.generate(prompt, max_tokens=50).strip()
 
             # 验证章节ID是否有效
             valid_chapters = [ch['id'] for ch in self.book_structure['chapters']]

@@ -16,14 +16,26 @@ class ClaudeClient:
     """Claude API 客户端"""
 
     def __init__(self):
-        if not ANTHROPIC_API_KEY:
-            raise ValueError("未找到 ANTHROPIC_AUTH_TOKEN 环境变量")
+        self.available = False
+        self.client = None
 
-        self.client = Anthropic(api_key=ANTHROPIC_API_KEY, base_url=ANTHROPIC_BASE_URL)
-        self.model = "claude-sonnet-4-5-20250929"
+        if ANTHROPIC_API_KEY:
+            try:
+                self.client = Anthropic(api_key=ANTHROPIC_API_KEY, base_url=ANTHROPIC_BASE_URL)
+                self.model = "claude-sonnet-4-6"
+                self.available = True
+                logger.info("Claude API 初始化成功")
+            except Exception as e:
+                logger.warning(f"Claude API 初始化失败: {e}")
+                self.available = False
+        else:
+            logger.warning("未配置 ANTHROPIC_AUTH_TOKEN，Claude API 不可用")
 
     def generate(self, prompt: str, max_tokens: int = 2000) -> str:
         """生成内容"""
+        if not self.available:
+            raise RuntimeError("Claude API 不可用，请检查配置或使用其他 AI 服务")
+
         try:
             logger.info(f"调用 Claude API 生成内容 (max_tokens={max_tokens})")
 

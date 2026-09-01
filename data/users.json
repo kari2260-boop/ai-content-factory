@@ -1,0 +1,29 @@
+{
+  "users": [
+    {
+      "id": "dr_k",
+      "name": "K博士",
+      "full_name": "郭梦娇",
+      "description": "教育心理学专家，专注于家庭教育和儿童发展",
+      "created_at": "2024-02-20T00:00:00",
+      "active": true
+    },
+    {
+      "id": "xiaoyu",
+      "name": "小钰",
+      "full_name": "小钰",
+      "description": "内容创作者",
+      "created_at": "2026-03-11T00:00:00",
+      "active": true
+    },
+    {
+      "id": "wenjing",
+      "name": "文静",
+      "full_name": "文静",
+      "description": "内容创作者",
+      "created_at": "2026-03-11T00:00:00",
+      "active": true
+    }
+  ],
+  "default_user": "dr_k"
+}

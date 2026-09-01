@@ -81,9 +81,14 @@ class DailyWorkflow:
         logger.info(f"✍️ Step 2: 开始生成内容 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         logger.info("=" * 80)
 
+        openclaw_status = self.openclaw.get_status()
         if not self.openclaw.available:
-            logger.error("❌ OpenClaw 不可用，无法生成内容")
-            logger.info("💡 请先启动 OpenClaw: openclaw gateway")
+            logger.error(
+                f"❌ OpenClaw 当前不可直接调用（{openclaw_status.get('label', '未知状态')}）"
+            )
+            logger.info(
+                f"💡 状态详情: {openclaw_status.get('detail', '无')}。可先确认 gateway 可达后再生成。"
+            )
             return False
 
         try:
