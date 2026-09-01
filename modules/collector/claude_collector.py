@@ -6,9 +6,10 @@ import os
 import json
 from typing import List, Dict
 from datetime import datetime
-from anthropic import Anthropic
 
+from modules.llm_client import LLMClient
 from modules.utils import setup_logger, save_json, get_date_str, DATA_DIR
+from modules.config import ANTHROPIC_API_KEY, ANTHROPIC_BASE_URL, ANTHROPIC_FAST_MODEL
 
 logger = setup_logger('claude_collector', 'collector.log')
 
@@ -16,16 +17,20 @@ logger = setup_logger('claude_collector', 'collector.log')
 class ClaudeCollector:
     """使用 Claude API 生成选题"""
 
-    def __init__(self):
-        self.topics_dir = DATA_DIR / 'topics'
-        self.topics_dir.mkdir(exist_ok=True)
+    def __init__(self, user_id: str = 'dr_k'):
+        self.topics_dir = DATA_DIR / 'users' / user_id / 'topics'
+        self.topics_dir.mkdir(parents=True, exist_ok=True)
 
         # 初始化 Claude 客户端
-        api_key = os.getenv('ANTHROPIC_AUTH_TOKEN')
-        if not api_key:
+        if not ANTHROPIC_API_KEY:
             raise ValueError("未找到 ANTHROPIC_AUTH_TOKEN 环境变量")
 
-        self.client = Anthropic(api_key=api_key)
+        self.model = ANTHROPIC_FAST_MODEL
+        self.client = LLMClient(
+            api_key=ANTHROPIC_API_KEY,
+            base_url=ANTHROPIC_BASE_URL,
+            model=self.model,
+        )
 
     def generate_topics(self, count: int = 15) -> List[Dict]:
         """使用 Claude 生成选题"""
@@ -54,17 +59,10 @@ class ClaudeCollector:
 只返回 JSON 数组，不要其他内容。"""
 
         try:
-            response = self.client.messages.create(
-                model="claude-sonnet-4-5-20250929",
+            response_text = self.client.generate(
+                prompt,
                 max_tokens=4096,
-                messages=[{
-                    "role": "user",
-                    "content": prompt
-                }]
             )
-
-            # 提取响应文本
-            response_text = response.content[0].text
 
             # 解析 JSON
             topics = self._extract_json(response_text)

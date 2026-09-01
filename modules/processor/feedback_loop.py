@@ -6,10 +6,10 @@ import json
 from typing import Dict, List, Tuple
 from datetime import datetime
 from difflib import SequenceMatcher
-from anthropic import Anthropic
 
+from modules.llm_client import LLMClient
 from modules.utils import setup_logger
-from modules.config import ANTHROPIC_API_KEY
+from modules.config import ANTHROPIC_API_KEY, ANTHROPIC_BASE_URL, ANTHROPIC_MODEL
 
 logger = setup_logger('feedback_loop', 'feedback.log')
 
@@ -21,8 +21,12 @@ class FeedbackLearner:
         if not ANTHROPIC_API_KEY:
             raise ValueError("未找到 ANTHROPIC_AUTH_TOKEN 环境变量")
 
-        self.client = Anthropic(api_key=ANTHROPIC_API_KEY)
-        self.model = "claude-sonnet-4-5-20250929"
+        self.model = ANTHROPIC_MODEL
+        self.client = LLMClient(
+            api_key=ANTHROPIC_API_KEY,
+            base_url=ANTHROPIC_BASE_URL,
+            model=self.model,
+        )
 
     def compare_versions(self, original: str, edited: str) -> Dict:
         """
@@ -92,16 +96,11 @@ class FeedbackLearner:
 只返回 JSON，不要其他内容。"""
 
         try:
-            response = self.client.messages.create(
-                model=self.model,
+            result_text = self.client.generate(
+                prompt,
                 max_tokens=1000,
-                messages=[{
-                    "role": "user",
-                    "content": prompt
-                }]
             )
-
-            result_text = response.content[0].text.strip()
+            result_text = result_text.strip()
 
             # 移除可能的 markdown 代码块标记
             if result_text.startswith('```'):
@@ -196,16 +195,10 @@ class FeedbackLearner:
 请应用这些规律优化内容，保持原意但符合用户风格。直接返回优化后的内容，不要解释。"""
 
         try:
-            response = self.client.messages.create(
-                model=self.model,
+            optimized = self.client.generate(
+                prompt,
                 max_tokens=2000,
-                messages=[{
-                    "role": "user",
-                    "content": prompt
-                }]
-            )
-
-            optimized = response.content[0].text.strip()
+            ).strip()
             return optimized
 
         except Exception as e:

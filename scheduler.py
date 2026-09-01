@@ -4,9 +4,11 @@
 """
 import schedule
 import time
+import sys
 from datetime import datetime
 
 from modules.collector.main import TopicCollector
+from modules.creator_radar.runner import CreatorRadar
 from modules.utils import setup_logger
 
 try:
@@ -82,6 +84,24 @@ def weekly_book_integration_task():
     logger.info("=" * 60)
 
 
+def daily_creator_radar_task():
+    """每日神经多样性创作者雷达日报"""
+    logger.info("=" * 60)
+    logger.info(f"开始执行创作者雷达日报任务 - {datetime.now()}")
+    logger.info("=" * 60)
+
+    radar = CreatorRadar()
+    try:
+        report_path = radar.run()
+        logger.info(f"创作者雷达日报完成: {report_path}")
+    except Exception as e:
+        logger.error(f"创作者雷达日报失败: {str(e)}")
+    finally:
+        radar.close()
+
+    logger.info("=" * 60)
+
+
 def run_scheduler():
     """运行调度器"""
     logger.info("🚀 定时任务调度器启动")
@@ -89,16 +109,24 @@ def run_scheduler():
     # 每天早上 7:00 执行选题采集
     schedule.every().day.at("07:00").do(daily_collection_task)
 
+    # 每天早上 8:00 执行创作者雷达日报
+    schedule.every().day.at("08:00").do(daily_creator_radar_task)
+
     # 每周日早上 8:00 执行书稿整合
     schedule.every().sunday.at("08:00").do(weekly_book_integration_task)
 
     logger.info("📅 已设置定时任务:")
     logger.info("  - 每日 07:00: 选题采集")
+    logger.info("  - 每日 08:00: 神经多样性创作者雷达日报")
     logger.info("  - 每周日 08:00: 书稿整合")
 
     # 立即执行一次（测试用）
-    if input("是否立即执行一次选题采集？(y/n): ").lower() == 'y':
-        daily_collection_task()
+    if sys.stdin.isatty():
+        choice = input("是否立即执行一次？(y/n/r=创作者雷达): ").lower()
+        if choice == 'y':
+            daily_collection_task()
+        elif choice == 'r':
+            daily_creator_radar_task()
 
     # 持续运行
     logger.info("\n⏰ 调度器运行中，等待定时任务...")

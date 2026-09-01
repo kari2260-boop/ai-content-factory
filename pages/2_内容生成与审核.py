@@ -121,7 +121,7 @@ def generate_full_content(outline_data: Dict, format_type: str) -> str:
 请生成完整的朋友圈文案。"""
 
     try:
-        content = st.session_state.generator.generate_with_claude(prompt)
+        content = st.session_state.generator.claude.generate(prompt, max_tokens=2000)
         return content
     except Exception as e:
         st.error(f"生成失败: {str(e)}")

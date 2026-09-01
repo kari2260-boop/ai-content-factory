@@ -12,12 +12,22 @@ env/
 ENV/
 
 # 数据文件
-data/topics/*.json
-data/drafts/*.json
-data/published/*.json
+data/topics/
+data/drafts/
+data/published/
+data/users/
+data/users.json
+data/creator_radar/*.sqlite3
+data/creator_radar/imports/
+data/creator_radar/reports/
 
 # 日志
-logs/*.log
+logs/
+*.log
+
+# 系统配置
+com.kdoctor.creator-radar.plist
+data_backup_*/
 
 # IDE
 .vscode/

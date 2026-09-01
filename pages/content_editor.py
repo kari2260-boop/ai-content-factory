@@ -5,6 +5,7 @@ import streamlit as st
 import json
 from pathlib import Path
 from datetime import datetime
+from modules.utils import DATA_DIR
 
 st.set_page_config(
     page_title="内容编辑器 - K博士 AI 内容工厂",
@@ -48,7 +49,13 @@ st.title("✏️ 内容编辑器")
 st.markdown("查看、编辑和管理已生成的内容")
 
 # 加载草稿列表
-drafts_dir = Path("/Users/k/ai-content-factory/data/drafts")
+try:
+    from modules.user.context import UserContext
+    user_data_dir = UserContext.get_current_data_dir()
+    drafts_dir = user_data_dir / 'drafts'
+except:
+    drafts_dir = DATA_DIR / 'drafts'
+drafts_dir.mkdir(parents=True, exist_ok=True)
 draft_files = sorted(drafts_dir.glob("draft_*.json"), key=lambda x: x.stat().st_mtime, reverse=True)
 
 if not draft_files:

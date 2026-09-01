@@ -88,20 +88,37 @@ with col1:
     st.subheader("📋 待审核选题")
 
     # 加载已打分的选题
-    topics_dir = DATA_DIR / 'topics'
-    scored_files = sorted(topics_dir.glob('scored_topics_*.json'), reverse=True)
+    from modules.user.context import UserContext
+    user_data_dir = UserContext.get_current_data_dir()
+    topics_dir = user_data_dir / 'topics'
 
-    if scored_files:
-        with open(scored_files[0], 'r', encoding='utf-8') as f:
-            topics = json.load(f)
+    # 优先加载 latest.json，其次搜索 topics_*.json 和 scored_topics_*.json
+    topics = []
+    latest_file = topics_dir / 'latest.json'
+    if latest_file.exists():
+        with open(latest_file, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            topics = data.get('topics', []) if isinstance(data, dict) else data
+    else:
+        scored_files = sorted(
+            list(topics_dir.glob('scored_topics_*.json')) + list(topics_dir.glob('topics_*.json')),
+            reverse=True
+        )
+        if scored_files:
+            with open(scored_files[0], 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                topics = data.get('topics', []) if isinstance(data, dict) else data
 
-        st.info(f"加载了 {len(topics)} 个已打分选题")
+    if topics:
+        st.info(f"加载了 {len(topics)} 个选题")
 
         # 显示选题列表
         for i, topic in enumerate(topics[:10]):
-            with st.expander(f"#{i+1} [{topic['total_score']}/50分] {topic['title'][:40]}..."):
-                st.write(f"**平台：** {topic.get('platform', '未知')}")
-                st.write(f"**总分：** {topic['total_score']}/50")
+            score_text = f"[{topic['total_score']}/50分] " if 'total_score' in topic else ""
+            with st.expander(f"#{i+1} {score_text}{topic['title'][:40]}..."):
+                st.write(f"**来源：** {topic.get('source', topic.get('platform', '未知'))}")
+                if 'total_score' in topic:
+                    st.write(f"**总分：** {topic['total_score']}/50")
                 st.write(f"**用户痛点：** {topic.get('audience_pain_point', '未识别')}")
 
                 if st.button(f"生成大纲", key=f"gen_{i}"):
