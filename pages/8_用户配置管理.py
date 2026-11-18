@@ -215,3 +215,93 @@ for user in user_manager.get_active_users():
     })
 
 st.dataframe(pd.DataFrame(status_data), use_container_width=True, hide_index=True)
+
+st.markdown("---")
+
+# ── AI 模型配置 ───────────────────────────────────────────────
+st.markdown("### AI 模型配置")
+
+from dotenv import dotenv_values, set_key
+from pathlib import Path as _Path
+
+ENV_FILE = _Path(__file__).parent.parent / '.env'
+
+AVAILABLE_MODELS = [
+    "claude-sonnet-4-6",
+    "claude-sonnet-5",
+    "claude-sonnet-5-5",
+    "claude-opus-4-6",
+    "claude-opus-5",
+    "claude-opus-5-5",
+    "claude-haiku-4-5-20251001",
+    "claude-haiku-5-5",
+]
+
+env_vals = dotenv_values(ENV_FILE)
+current_main = env_vals.get('ANTHROPIC_MODEL', 'claude-sonnet-4-6')
+current_fast = env_vals.get('ANTHROPIC_FAST_MODEL', 'claude-haiku-4-5-20251001')
+current_scoring = env_vals.get('ANTHROPIC_SCORING_MODEL', 'claude-haiku-4-5-20251001')
+
+col1, col2, col3 = st.columns(3)
+
+def _idx(val):
+    return AVAILABLE_MODELS.index(val) if val in AVAILABLE_MODELS else 0
+
+with col1:
+    st.markdown("**主力模型**（内容生成）")
+    new_main = st.selectbox("主力模型", AVAILABLE_MODELS, index=_idx(current_main),
+                             label_visibility="collapsed", key="sel_main_model")
+    st.caption("用于生成视频号/公众号/小红书等正式内容")
+
+with col2:
+    st.markdown("**快速模型**（辅助任务）")
+    new_fast = st.selectbox("快速模型", AVAILABLE_MODELS, index=_idx(current_fast),
+                             label_visibility="collapsed", key="sel_fast_model")
+    st.caption("用于朋友圈/书稿分类等轻量任务，速度更快")
+
+with col3:
+    st.markdown("**打分模型**（选题评分）")
+    new_scoring = st.selectbox("打分模型", AVAILABLE_MODELS, index=_idx(current_scoring),
+                                label_visibility="collapsed", key="sel_scoring_model")
+    st.caption("用于选题打分，建议用快速模型节省成本")
+
+if st.button("💾 保存模型配置", type="primary"):
+    set_key(str(ENV_FILE), 'ANTHROPIC_MODEL', new_main)
+    set_key(str(ENV_FILE), 'ANTHROPIC_FAST_MODEL', new_fast)
+    set_key(str(ENV_FILE), 'ANTHROPIC_SCORING_MODEL', new_scoring)
+    st.success(f"✅ 已保存：主力={new_main}，快速={new_fast}，打分={new_scoring}，重启后生效")
+
+st.info("💡 修改后需重启 Streamlit 才能生效（终端运行 `./start.sh`）")
+
+st.markdown("---")
+
+# ── 微信公众号配置 ────────────────────────────────────────────
+st.markdown("### 微信公众号配置")
+
+import os
+wechat_appid = env_vals.get('WECHAT_APPID', '')
+wechat_secret = env_vals.get('WECHAT_SECRET', '')
+
+col1, col2 = st.columns(2)
+with col1:
+    new_appid = st.text_input("AppID", value=wechat_appid, placeholder="wx...（公众号后台「设置-开发设置」）")
+with col2:
+    new_secret = st.text_input("AppSecret", value=wechat_secret, type="password", placeholder="32位字符串")
+
+if st.button("💾 保存公众号配置", key="save_wechat"):
+    set_key(str(ENV_FILE), 'WECHAT_APPID', new_appid.strip())
+    set_key(str(ENV_FILE), 'WECHAT_SECRET', new_secret.strip())
+    st.success("✅ 已保存，内容生成页面可直接推送草稿箱")
+
+# 测试连接
+if wechat_appid and wechat_secret:
+    if st.button("🔌 测试公众号连接", key="test_wechat"):
+        try:
+            from modules.publisher.wechat_mp_client import WechatMPClient
+            client = WechatMPClient()
+            token = client._get_access_token()
+            st.success(f"✅ 连接成功，access_token 已获取（前8位：{token[:8]}…）")
+        except Exception as e:
+            st.error(f"❌ 连接失败：{e}")
+else:
+    st.caption("配置 AppID 和 AppSecret 后可测试连接")

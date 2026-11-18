@@ -26,8 +26,8 @@ ANTHROPIC_BASE_URL = os.getenv('ANTHROPIC_BASE_URL', 'https://www.fucheers.top')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 
 # Claude 模型配置
-# 默认使用当前代理实际可调用的 OpenAI-compatible 模型。
-DEFAULT_CLAUDE_MODEL = 'gpt-5.4-mini'
+DEFAULT_CLAUDE_MODEL = 'claude-sonnet-4-6'
+DEFAULT_FAST_MODEL = 'claude-haiku-4-5-20251001'
 ANTHROPIC_MODEL = (
     os.getenv('ANTHROPIC_MODEL')
     or os.getenv('CLAUDE_MODEL')
@@ -36,12 +36,12 @@ ANTHROPIC_MODEL = (
 ANTHROPIC_FAST_MODEL = (
     os.getenv('ANTHROPIC_FAST_MODEL')
     or os.getenv('CLAUDE_FAST_MODEL')
-    or ANTHROPIC_MODEL
+    or DEFAULT_FAST_MODEL
 )
 ANTHROPIC_SCORING_MODEL = (
     os.getenv('ANTHROPIC_SCORING_MODEL')
     or os.getenv('CLAUDE_SCORING_MODEL')
-    or ANTHROPIC_FAST_MODEL
+    or DEFAULT_FAST_MODEL
 )
 
 # OpenClaw 配置

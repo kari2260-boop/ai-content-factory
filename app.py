@@ -3,6 +3,7 @@ K博士 AI 内容工厂 - Streamlit 管理后台
 """
 import streamlit as st
 import json
+import importlib.util
 from datetime import datetime
 from pathlib import Path
 
@@ -15,10 +16,146 @@ from modules.user.context import UserContext
 
 # 页面配置
 st.set_page_config(
-    page_title="K博士 AI 内容工厂",
-    page_icon="🏭",
-    layout="wide"
+    page_title="傲客内容工厂",
+    page_icon="✦",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
+
+# 傲客品牌 CSS —— 浅色为主，金线点缀
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Inter:wght@400;500;600&display=swap');
+
+/* ── 全局 ── */
+html, body, [class*="css"], * {
+    font-family: "Inter","PingFang SC","Hiragino Sans GB",system-ui,sans-serif !important;
+    color: #2a241c;
+}
+.stApp, .main, section.main, [data-testid="stAppViewContainer"] {
+    background: #f7f3ec !important;
+}
+
+/* ── 顶部黑条隐藏 ── */
+[data-testid="stHeader"], header[data-testid="stHeader"] {
+    background: transparent !important;
+    border-bottom: 1px solid #e8dfc8 !important;
+    height: 0 !important;
+    min-height: 0 !important;
+}
+.stDeployButton, [data-testid="stToolbar"] { display: none !important; }
+
+/* ── 隐藏 Streamlit 自带 pages 导航 ── */
+[data-testid="stSidebarNav"],
+[data-testid="stSidebarNavItems"],
+section[data-testid="stSidebar"] > div > div > div:first-child ul,
+nav[aria-label="pages navigation"] { display: none !important; }
+
+/* ── 侧边栏 ── */
+[data-testid="stSidebar"] {
+    background: #faf7f2 !important;
+    border-right: 1px solid #e0d5be !important;
+    min-width: 220px !important;
+    max-width: 240px !important;
+}
+[data-testid="stSidebar"] * { color: #2a241c !important; background: transparent !important; }
+[data-testid="stSidebar"] .stRadio label { font-size: 13px !important; padding: 1px 0 !important; }
+
+/* ── 下拉/select 白底（关键修复） ── */
+[data-baseweb="select"] > div,
+[data-baseweb="select"] > div > div,
+[data-testid="stSelectbox"] > div > div,
+div[role="listbox"], div[role="option"],
+[data-baseweb="popover"] div,
+[data-baseweb="menu"], [data-baseweb="menu"] ul,
+[data-baseweb="menu"] li {
+    background: #fff !important;
+    color: #2a241c !important;
+}
+[data-baseweb="select"] > div { border-color: #d8cdb5 !important; border-radius: 2px !important; }
+[data-baseweb="select"] svg { color: #9c7535 !important; }
+[data-baseweb="menu"] li:hover { background: #fdf6e8 !important; }
+
+/* ── 多选 tag ── */
+[data-baseweb="tag"] {
+    background: rgba(201,163,92,.15) !important;
+    color: #9c7535 !important;
+    border-radius: 2px !important;
+}
+
+/* ── 状态小点 ── */
+.status-row { display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12px;color:#5f574b;border-bottom:1px solid #ede5d0 }
+.dot-on  { width:6px;height:6px;border-radius:50%;background:#22c55e;flex-shrink:0 }
+.dot-off { width:6px;height:6px;border-radius:50%;background:#d1c5b0;flex-shrink:0 }
+.dot-warn{ width:6px;height:6px;border-radius:50%;background:#f59e0b;flex-shrink:0 }
+
+/* ── 主内容区 ── */
+.block-container { padding-top: 2rem !important; max-width: 1080px !important; background: #f7f3ec !important; }
+
+/* ── 标题 ── */
+h1 { font-family:"Noto Serif SC",serif !important; font-size:24px !important; font-weight:700 !important;
+     color:#1a1510 !important; border-bottom:1px solid #e0d5be; padding-bottom:10px; margin-bottom:18px !important; }
+h2 { font-family:"Noto Serif SC",serif !important; font-size:18px !important; font-weight:700 !important; color:#2a241c !important; }
+h3 { font-family:"Noto Serif SC",serif !important; font-size:15px !important; font-weight:700 !important; color:#3a3028 !important; }
+
+/* ── 主按钮 ── */
+.stButton > button[kind="primary"] {
+    background: linear-gradient(100deg,#8a6a35 0%,#c9a35c 55%,#e8c97a 100%) !important;
+    color: #fff !important; border: none !important; font-weight:600 !important;
+    letter-spacing:.08em !important; border-radius:2px !important;
+}
+.stButton > button[kind="primary"]:hover { filter: brightness(1.07) !important; }
+.stButton > button:not([kind="primary"]) {
+    border:1px solid #c9a35c !important; color:#9c7535 !important;
+    background:#fff !important; border-radius:2px !important;
+}
+.stButton > button:not([kind="primary"]):hover { background:#fdf6e8 !important; }
+
+/* ── 展开面板 ── */
+[data-testid="stExpander"] { border:1px solid #e0d5be !important; border-radius:2px !important; background:#fff !important; }
+[data-testid="stExpander"]:hover { border-color:#c9a35c !important; }
+[data-testid="stExpander"] summary { color:#3a3028 !important; font-weight:500 !important; font-size:13px !important; }
+[data-testid="stExpander"] > div { background:#fff !important; }
+
+/* ── 指标卡 ── */
+[data-testid="stMetric"] { background:#fff !important; border:1px solid #e0d5be !important; border-radius:2px !important; padding:14px !important; }
+[data-testid="stMetricValue"] { color:#9c7535 !important; font-family:"Noto Serif SC",serif !important; font-size:26px !important; }
+[data-testid="stMetricLabel"] { color:#77716a !important; font-size:11px !important; letter-spacing:.1em !important; }
+
+/* ── 分隔线 ── */
+hr { border:none !important; border-top:1px solid #e0d5be !important; margin:12px 0 !important; }
+
+/* ── 标签页 ── */
+.stTabs [data-baseweb="tab-list"] { border-bottom:1px solid #e0d5be !important; gap:0 !important; background:transparent !important; }
+.stTabs [data-baseweb="tab"] { border-radius:0 !important; font-size:13px !important; padding:8px 18px !important; color:#77716a !important; background:transparent !important; border:none !important; }
+.stTabs [aria-selected="true"] { color:#9c7535 !important; border-bottom:2px solid #c9a35c !important; font-weight:600 !important; }
+[data-testid="stTabsContent"] { background:#fff !important; border:1px solid #e0d5be !important; border-top:none !important; padding:16px !important; }
+
+/* ── 输入框 ── */
+.stTextInput input, .stTextArea textarea {
+    border-radius:2px !important; border-color:#d8cdb5 !important;
+    background:#fff !important; color:#2a241c !important; font-size:14px !important;
+}
+.stTextInput input:focus, .stTextArea textarea:focus {
+    border-color:#c9a35c !important; box-shadow:0 0 0 2px rgba(201,163,92,.15) !important;
+}
+
+/* ── 通知 ── */
+[data-testid="stAlert"] { border-radius:2px !important; font-size:13px !important; }
+div[data-testid="stAlert"][kind="info"]    { background:#fdf9f0 !important; border-left:3px solid #c9a35c !important; }
+div[data-testid="stAlert"][kind="success"] { background:#f0fdf4 !important; border-left:3px solid #22c55e !important; }
+div[data-testid="stAlert"][kind="warning"] { background:#fffbeb !important; border-left:3px solid #f59e0b !important; }
+div[data-testid="stAlert"][kind="error"]   { background:#fef2f2 !important; border-left:3px solid #ef4444 !important; }
+
+/* ── slider ── */
+[data-testid="stSlider"] [data-testid="stThumbValue"] { background:#9c7535 !important; color:#fff !important; }
+
+/* ── scrollbar ── */
+::-webkit-scrollbar { width:5px; height:5px; }
+::-webkit-scrollbar-track { background:#f0ebe0; }
+::-webkit-scrollbar-thumb { background:#c9a35c; border-radius:3px; }
+</style>
+""", unsafe_allow_html=True)
 
 # 初始化
 def init_modules(_user_id):
@@ -32,106 +169,98 @@ def init_modules(_user_id):
 user_manager = UserManager()
 users = user_manager.get_active_users()
 
-# 侧边栏
-st.sidebar.title("🏭 AI 内容工厂")
+# 侧边栏品牌标题
+st.sidebar.markdown("""
+<div style="padding:16px 0 14px; border-bottom:1px solid #e0d5be; margin-bottom:14px">
+  <div style="display:flex;align-items:center;gap:8px">
+    <div style="width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,#FFBD47,#F1A12A);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="white" stroke-width="2" fill="none"/>
+        <path d="M9 22V12h6v10" stroke="white" stroke-width="2"/>
+      </svg>
+    </div>
+    <div>
+      <div style="font-weight:700;font-size:14px;color:#1a1510;letter-spacing:.04em;line-height:1.2">傲客内容工厂</div>
+      <div style="font-size:10px;letter-spacing:.18em;color:#9c7535;text-transform:uppercase;margin-top:1px">Content Studio</div>
+    </div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
 
-# 用户选择器
+# 用户选择器（精简版）
 if users:
     user_options = {u['id']: u['name'] for u in users}
     selected_user_id = st.sidebar.selectbox(
-        "👤 选择用户",
+        "导师",
         options=list(user_options.keys()),
         format_func=lambda x: user_options[x],
         key='user_selector',
         index=list(user_options.keys()).index(user_manager.get_default_user()) if user_manager.get_default_user() in user_options else 0
     )
-
-    # 设置当前用户
     UserContext.set_current_user(selected_user_id)
     current_user = user_manager.get_user(selected_user_id)
-
-    st.sidebar.info(f"当前用户：{current_user['name']}")
 else:
     st.sidebar.error("❌ 未找到用户配置")
     selected_user_id = 'dr_k'
 
-st.sidebar.markdown("---")
-
-# 初始化模块（使用选中的用户ID）
+# 初始化模块
 collector, generator, publisher = init_modules(selected_user_id)
 
-# 服务状态显示
-st.sidebar.markdown("### 🔧 服务状态")
+# 今日统计数据
+_topics_count = len(collector.get_latest_topics())
+_drafts_count = len(list((DATA_DIR / 'users' / selected_user_id / 'drafts').glob('*.json'))) if (DATA_DIR / 'users' / selected_user_id / 'drafts').exists() else 0
 
-# Claude 状态
-try:
-    from modules.generator.claude_client import ClaudeClient
-    claude = ClaudeClient()
-    st.sidebar.success("✅ Claude API")
-except:
-    st.sidebar.error("❌ Claude API")
-
-# Gemini 状态
-try:
-    from modules.generator.gemini_client import GeminiClient
-    gemini = GeminiClient()
-    if gemini.available:
-        st.sidebar.success("✅ Gemini API")
-    else:
-        st.sidebar.warning("⚠️ Gemini API (未配置)")
-except:
-    st.sidebar.warning("⚠️ Gemini API (未配置)")
-
-# OpenClaw 状态
-try:
-    from modules.generator.openclaw_bridge import OpenClawBridge
-    openclaw = OpenClawBridge()
-    if openclaw.available:
-        st.sidebar.success("✅ OpenClaw")
-    else:
-        st.sidebar.warning("⚠️ OpenClaw (未运行)")
-except:
-    st.sidebar.warning("⚠️ OpenClaw (未运行)")
-
-# Notion 状态
-try:
-    from modules.publisher.notion_client import NotionClient
-    notion = NotionClient()
-    st.sidebar.success("✅ Notion API")
-except:
-    st.sidebar.error("❌ Notion API (未配置)")
-
-# 收件箱状态
-try:
-    from knowledge_feed import KnowledgeFeed
-    kf = KnowledgeFeed()
-    if kf.is_watching:
-        st.sidebar.success("✅ 收件箱监听")
-    else:
-        st.sidebar.info("⏸️ 收件箱监听 (未启动)")
-except:
-    st.sidebar.info("⏸️ 收件箱监听 (未启动)")
+# 侧边栏今日统计
+st.sidebar.markdown(f"""
+<div style="padding:8px 0 12px;border-bottom:1px solid #e0d5be;margin-bottom:12px">
+  <div style="font-size:10px;letter-spacing:.18em;color:#9c7535;text-transform:uppercase;margin-bottom:10px">今日概况</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <div style="background:#fff;border:1px solid #e8dfc8;padding:10px 12px;border-radius:2px">
+      <div style="font-size:22px;font-weight:700;color:#9c7535;font-family:'Noto Serif SC',serif;line-height:1">{_topics_count}</div>
+      <div style="font-size:10px;color:#8c8476;margin-top:4px;letter-spacing:.06em">今日选题</div>
+    </div>
+    <div style="background:#fff;border:1px solid #e8dfc8;padding:10px 12px;border-radius:2px">
+      <div style="font-size:22px;font-weight:700;color:#9c7535;font-family:'Noto Serif SC',serif;line-height:1">{_drafts_count}</div>
+      <div style="font-size:10px;color:#8c8476;margin-top:4px;letter-spacing:.06em">草稿</div>
+    </div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
 
 st.sidebar.markdown("---")
 
 page = st.sidebar.radio(
-    "导航",
-    ["📊 选题采集", "✍️ 内容生成", "📤 发布管理", "⚙️ 系统设置"]
+    "",
+    ["选题采集", "内容生成", "大纲审核", "发布管理", "系统设置", "用户配置", "知识库", "效果反馈"],
+    format_func=lambda x: {
+        "选题采集": "📋  选题采集",
+        "内容生成": "✦  内容生成",
+        "大纲审核": "◻  大纲审核",
+        "发布管理": "↗  发布管理",
+        "系统设置": "◎  系统设置",
+        "用户配置": "⊙  用户配置",
+        "知识库":   "◈  知识库",
+        "效果反馈": "△  效果反馈",
+    }[x]
 )
 
 st.sidebar.markdown("---")
-st.sidebar.info("""
-**使用流程：**
-1. 采集今日选题
-2. 勾选 2-3 个选题
-3. 写一句话观点
-4. 生成 5 种格式内容
-5. 审核并发布
-""")
+st.sidebar.markdown(f"""
+<div style="font-size:11px;color:#a19b90;padding:4px 0">
+  <div style="margin-bottom:4px">导师：<strong style="color:#5f574b">{current_user['name'] if 'current_user' in dir() else 'K博士'}</strong></div>
+  <div>模型：<strong style="color:#5f574b">sonnet-4-6</strong></div>
+</div>
+<div style="margin-top:10px">
+  <a href="https://app.awesomic.top/studio" target="_parent"
+     style="font-size:11px;color:#9c7535;text-decoration:none;border:1px solid #d8cdb5;padding:5px 10px;border-radius:2px;display:inline-block;letter-spacing:.04em">
+    ← 返回工作台
+  </a>
+</div>
+""", unsafe_allow_html=True)
 
 
 # ==================== 页面1：选题采集 ====================
-if page == "📊 选题采集":
+if page == "选题采集":
     st.title("📊 今日选题采集")
 
     col1, col2 = st.columns([2, 1])
@@ -267,7 +396,7 @@ if page == "📊 选题采集":
 
 
 # ==================== 页面2：内容生成 ====================
-elif page == "✍️ 内容生成":
+elif page == "内容生成":
     st.title("✍️ 内容生成工坊")
 
     # 检查是否有选中的选题
@@ -560,6 +689,85 @@ elif page == "✍️ 内容生成":
                         del st.session_state['show_preview']
                     st.rerun()
 
+            # ── 生图 + 公众号草稿箱 ──
+            st.markdown("---")
+            st.markdown("### 🎨 生图 & 一键推草稿")
+
+            img_col, mp_col = st.columns(2)
+
+            with img_col:
+                st.markdown("**封面图生成**")
+                img_platform = st.selectbox(
+                    "平台",
+                    ["wechat", "xiaohongshu", "video"],
+                    format_func=lambda x: {"wechat": "公众号", "xiaohongshu": "小红书", "video": "视频号"}[x],
+                    key="img_platform"
+                )
+                img_style = st.selectbox(
+                    "风格",
+                    ["educational", "modern", "minimalist", "colorful"],
+                    format_func=lambda x: {"educational": "教育简洁", "modern": "现代渐变", "minimalist": "极简", "colorful": "小红书活泼"}[x],
+                    key="img_style"
+                )
+                if st.button("🎨 生成封面图", use_container_width=True):
+                    with st.spinner("生成中，约 10-20 秒…"):
+                        try:
+                            from modules.visual.image_generator import ImageGenerator
+                            ig = ImageGenerator()
+                            if not ig.available:
+                                st.error("❌ 未配置图片 API key")
+                            else:
+                                img_path = ig.generate_cover_image(
+                                    title=topic['title'],
+                                    style=img_style,
+                                    platform=img_platform
+                                )
+                                if img_path:
+                                    st.session_state['generated_image'] = img_path
+                                    st.success("✅ 封面图生成成功")
+                                    st.rerun()
+                                else:
+                                    st.error("❌ 生成失败，请检查 API 是否支持 images 接口")
+                        except Exception as e:
+                            st.error(f"❌ 生图出错: {e}")
+
+                if st.session_state.get('generated_image'):
+                    img_path = st.session_state['generated_image']
+                    if Path(img_path).exists():
+                        st.image(img_path, caption="封面图预览", use_container_width=True)
+                        with open(img_path, 'rb') as f:
+                            st.download_button("⬇️ 下载封面图", f, file_name=Path(img_path).name, mime="image/png")
+
+            with mp_col:
+                st.markdown("**推送公众号草稿箱**")
+                import os as _os
+                has_mp = bool(_os.getenv('WECHAT_APPID') and _os.getenv('WECHAT_SECRET'))
+                if not has_mp:
+                    st.warning("⚠️ 未配置公众号 AppID/Secret，请到「用户配置」页面填写")
+                else:
+                    use_cover = st.checkbox("附带封面图", value=bool(st.session_state.get('generated_image')))
+                    if st.button("📨 推送到草稿箱", type="primary", use_container_width=True):
+                        article_content = draft['contents'].get('article', {}).get('content', '')
+                        if not article_content:
+                            st.error("❌ 请先生成「公众号」格式内容")
+                        else:
+                            with st.spinner("推送中…"):
+                                try:
+                                    from modules.publisher.wechat_mp_client import WechatMPClient
+                                    mp = WechatMPClient()
+                                    cover = st.session_state.get('generated_image') if use_cover else None
+                                    result = mp.push_article_draft(
+                                        title=topic['title'],
+                                        markdown_content=article_content,
+                                        image_path=cover
+                                    )
+                                    if result['success']:
+                                        st.success(f"✅ 草稿已推送！media_id: {result['media_id']}")
+                                    else:
+                                        st.error(f"❌ 推送失败: {result.get('error')}")
+                                except Exception as e:
+                                    st.error(f"❌ 推送出错: {e}")
+
             # 预览功能
             if st.session_state.get('show_preview', False):
                 st.markdown("---")
@@ -634,8 +842,23 @@ elif page == "✍️ 内容生成":
 
 
 
+# ==================== 页面2b：大纲审核 ====================
+elif page == "大纲审核":
+    spec = importlib.util.spec_from_file_location(
+        "outline_page",
+        Path(__file__).parent / "pages" / "1_大纲审核.py"
+    )
+    mod = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(mod)
+    except SystemExit:
+        pass
+    except Exception as e:
+        st.error(f"加载大纲审核页失败: {e}")
+
+
 # ==================== 页面3：发布管理 ====================
-elif page == "📤 发布管理":
+elif page == "发布管理":
     st.title("📤 发布管理")
 
     # 显示发布记录（使用当前用户的数据）
@@ -656,7 +879,7 @@ elif page == "📤 发布管理":
 
 
 # ==================== 页面4：系统设置 ====================
-elif page == "⚙️ 系统设置":
+elif page == "系统设置":
     st.title("⚙️ 系统设置")
 
     st.markdown("### 🔑 API 配置")
@@ -694,7 +917,7 @@ elif page == "⚙️ 系统设置":
 
     st.markdown("---")
     st.markdown("### 📁 数据目录")
-    st.code(str(DATA_DIR))
+    st.markdown(f'<div style="background:#fff;border:1px solid #e0d5be;border-radius:2px;padding:10px 14px;font-family:monospace;font-size:13px;color:#3a3028">{DATA_DIR}</div>', unsafe_allow_html=True)
 
     st.markdown("### 📊 统计信息")
     col1, col2, col3 = st.columns(3)
@@ -713,3 +936,50 @@ elif page == "⚙️ 系统设置":
     with col3:
         published_count = len(list((user_data_dir / 'published').glob('*.txt')))
         st.metric("已发布文件", published_count)
+
+
+# ==================== 页面5：用户配置 ====================
+elif page == "用户配置":
+    import importlib, sys
+    # 动态加载 pages/8_用户配置管理.py 的内容
+    spec = importlib.util.spec_from_file_location(
+        "user_config_page",
+        Path(__file__).parent / "pages" / "8_用户配置管理.py"
+    )
+    mod = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(mod)
+    except SystemExit:
+        pass
+    except Exception as e:
+        st.error(f"加载用户配置页失败: {e}")
+
+
+# ==================== 页面6：知识库 ====================
+elif page == "知识库":
+    spec = importlib.util.spec_from_file_location(
+        "kb_page",
+        Path(__file__).parent / "pages" / "6_知识库管理.py"
+    )
+    mod = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(mod)
+    except SystemExit:
+        pass
+    except Exception as e:
+        st.error(f"加载知识库页失败: {e}")
+
+
+# ==================== 页面7：效果反馈 ====================
+elif page == "效果反馈":
+    spec = importlib.util.spec_from_file_location(
+        "feedback_page",
+        Path(__file__).parent / "pages" / "7_效果反馈.py"
+    )
+    mod = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(mod)
+    except SystemExit:
+        pass
+    except Exception as e:
+        st.error(f"加载效果反馈页失败: {e}")

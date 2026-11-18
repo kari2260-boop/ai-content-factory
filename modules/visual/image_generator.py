@@ -1,16 +1,108 @@
 """
-图片生成器 - 支持多种 AI 图片生成服务
+图片生成器 - 通过现有代理调用 OpenAI Images API
 """
 import os
 import requests
 from pathlib import Path
 from typing import Optional, Dict
-import base64
 from datetime import datetime
 
 from modules.utils import setup_logger
 
 logger = setup_logger('image_generator', 'visual.log')
+
+
+class ImageGenerator:
+    """AI 图片生成器"""
+
+    def __init__(self):
+        self.api_key = os.getenv('ANTHROPIC_API_KEY') or os.getenv('OPENAI_API_KEY')
+        self.base_url = os.getenv('ANTHROPIC_BASE_URL', 'https://www.fucheers.top').rstrip('/')
+        self.output_dir = Path('data/images')
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+
+    @property
+    def available(self) -> bool:
+        return bool(self.api_key)
+
+    def generate_cover_image(self, title: str, style: str = "educational", platform: str = "wechat") -> Optional[str]:
+        """生成封面图，返回本地文件路径"""
+        if not self.available:
+            logger.warning("未配置 API key，跳过生图")
+            return None
+
+        logger.info(f"生成封面图: {title[:30]}... | 平台: {platform}")
+        size = self._get_platform_size(platform)
+        prompt = self._build_prompt(title, style, platform)
+        return self._generate_via_proxy(prompt, size)
+
+    def _get_platform_size(self, platform: str) -> str:
+        sizes = {
+            'wechat': '1024x1024',
+            'xiaohongshu': '1024x1024',
+            'video': '1024x1024',
+            'moments': '1024x1024',
+        }
+        return sizes.get(platform, '1024x1024')
+
+    def _build_prompt(self, title: str, style: str, platform: str) -> str:
+        style_prompts = {
+            'educational': 'clean professional educational illustration, soft warm colors, modern flat design',
+            'modern': 'modern minimalist, gradient colors, abstract geometric shapes',
+            'minimalist': 'minimalist, simple clean lines, ivory white background',
+            'colorful': 'vibrant trendy lifestyle aesthetic, eye-catching, Instagram-style',
+        }
+        platform_hints = {
+            'xiaohongshu': 'trendy lifestyle aesthetic, warm tones, suitable for Chinese youth audience',
+            'wechat': 'professional trustworthy, clean editorial style',
+            'video': 'bold attention-grabbing, clear focal point, high contrast',
+            'moments': 'casual warm relatable',
+        }
+        base_style = style_prompts.get(style, style_prompts['educational'])
+        platform_hint = platform_hints.get(platform, '')
+        return (
+            f'Create a {base_style} cover image for Chinese education content titled "{title}". '
+            f'{platform_hint}. High quality, no text in the image.'
+        )
+
+    def _generate_via_proxy(self, prompt: str, size: str) -> Optional[str]:
+        """通过代理调用 Images API"""
+        try:
+            url = f"{self.base_url}/v1/images/generations"
+            headers = {
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+            }
+            data = {
+                "model": "dall-e-2",
+                "prompt": prompt[:950],  # DALL-E 2 prompt limit
+                "n": 1,
+                "size": size,
+            }
+            resp = requests.post(url, headers=headers, json=data, timeout=60)
+            resp.raise_for_status()
+            image_url = resp.json()['data'][0]['url']
+            return str(self._download_image(image_url))
+        except Exception as e:
+            logger.error(f"生图失败: {e}")
+            return None
+
+    def _download_image(self, url: str) -> Path:
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filepath = self.output_dir / f"cover_{timestamp}.png"
+        resp = requests.get(url, timeout=30)
+        resp.raise_for_status()
+        filepath.write_bytes(resp.content)
+        return filepath
+
+    def generate_batch(self, contents: list) -> Dict[str, str]:
+        results = {}
+        for content in contents:
+            path = self.generate_cover_image(content.get('title', ''), platform=content.get('platform', 'wechat'))
+            if path:
+                results[content.get('platform', 'wechat')] = path
+        return results
+
 
 
 class ImageGenerator:

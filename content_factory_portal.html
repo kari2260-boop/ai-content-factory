@@ -1,0 +1,556 @@
+<title>傲客 · 内容工厂</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Inter:wght@400;500;600&display=swap">
+
+<style>
+/* ── 设计系统 ─────────────────────────────────────────────
+   Layout: 官网黑金体系 — 深黑底 + 香槟金 + 衬线标题 + 大留白
+   Colors: bg/surface/gold/text/muted + 语义色
+   Type: Noto Serif SC 标题 + Inter 正文
+──────────────────────────────────────────────────────── */
+:root {
+  --bg:        #0a0a0a;
+  --bg-2:      #101010;
+  --bg-3:      #161410;
+  --line:      rgba(255,255,255,.08);
+  --line-gold: rgba(201,163,92,.32);
+  --gold:      #c9a35c;
+  --gold-hi:   #ecd29e;
+  --gold-dim:  #8a6a35;
+  --text:      #ece7dc;
+  --muted:     #a19b90;
+  --dim:       #77716a;
+  --grad:      linear-gradient(100deg,#8a6a35 0%,#ecd29e 38%,#c9a35c 58%,#f4e2b8 100%);
+  --serif:     "Noto Serif SC", Georgia, serif;
+  --sans:      "Inter", system-ui, sans-serif;
+  --max:       1200px;
+  --shadow:    0 24px 60px rgba(0,0,0,.5);
+  --glow:      rgba(201,163,92,.14);
+  --r:         0px;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg:        #faf7f1;
+    --bg-2:      #f2ede3;
+    --bg-3:      #ece6d8;
+    --line:      rgba(30,24,14,.09);
+    --line-gold: rgba(150,112,52,.35);
+    --gold:      #9c7535;
+    --gold-hi:   #7d5a22;
+    --gold-dim:  #c8a96a;
+    --text:      #2a241c;
+    --muted:     #5f574b;
+    --dim:       #8c8476;
+    --grad:      linear-gradient(100deg,#7d5a22 0%,#b8893f 45%,#8a6428 75%,#a67c3a 100%);
+    --shadow:    0 20px 50px rgba(60,44,20,.16);
+    --glow:      rgba(184,137,63,.12);
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg:        #faf7f1;
+  --bg-2:      #f2ede3;
+  --bg-3:      #ece6d8;
+  --line:      rgba(30,24,14,.09);
+  --line-gold: rgba(150,112,52,.35);
+  --gold:      #9c7535;
+  --gold-hi:   #7d5a22;
+  --gold-dim:  #c8a96a;
+  --text:      #2a241c;
+  --muted:     #5f574b;
+  --dim:       #8c8476;
+  --grad:      linear-gradient(100deg,#7d5a22 0%,#b8893f 45%,#8a6428 75%,#a67c3a 100%);
+  --shadow:    0 20px 50px rgba(60,44,20,.16);
+  --glow:      rgba(184,137,63,.12);
+  color-scheme: light;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;background:var(--bg)}
+body{
+  font-family:var(--sans);color:var(--text);background:var(--bg);
+  line-height:1.75;-webkit-font-smoothing:antialiased;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:0;
+}
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+::selection{background:var(--gold);color:#000}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+.wrap{max-width:var(--max);margin:0 auto;padding:0 28px}
+@media(max-width:600px){.wrap{padding:0 16px}}
+
+.gold-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.tag{display:inline-block;font-size:11px;letter-spacing:.22em;color:var(--gold);border:1px solid var(--line-gold);padding:4px 12px;text-transform:uppercase}
+.idx{font-size:12px;letter-spacing:.28em;color:var(--gold);text-transform:uppercase;display:flex;gap:14px;align-items:center;margin-bottom:20px}
+.idx::after{content:"";flex:0 0 40px;height:1px;background:var(--line-gold)}
+h1,h2,h3{font-family:var(--serif);font-weight:700;line-height:1.3;color:var(--text);text-wrap:balance}
+h1{font-size:clamp(32px,5vw,64px);line-height:1.15}
+h2{font-size:clamp(24px,3vw,40px)}
+h3{font-size:18px}
+section{padding:100px 0;border-top:1px solid var(--line)}
+
+/* ── NAV ─────────────────────────────────────── */
+.nav{
+  position:fixed;inset:0 0 auto 0;z-index:100;
+  transition:background .3s,border-color .3s;
+  border-bottom:1px solid transparent;
+}
+.nav.scrolled{
+  background:color-mix(in srgb,var(--bg) 85%,transparent);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border-bottom-color:var(--line);
+}
+.nav .wrap{display:flex;align-items:center;justify-content:space-between;height:72px;gap:24px}
+.brand{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.brand svg{height:36px;width:auto}
+.brand-sep{width:1px;height:28px;background:var(--line-gold);opacity:.6}
+.brand-label{font-family:var(--serif);font-size:13px;letter-spacing:.12em;color:var(--gold-hi);white-space:nowrap}
+.nav-links{display:flex;gap:28px;list-style:none}
+.nav-links a{font-size:13px;letter-spacing:.06em;color:var(--muted);transition:color .2s}
+.nav-links a:hover{color:var(--gold-hi)}
+.nav-actions{display:flex;gap:10px;align-items:center;flex-shrink:0}
+.btn-sm{
+  font:inherit;font-size:12px;letter-spacing:.14em;cursor:pointer;
+  padding:7px 18px;border:1px solid var(--line-gold);
+  background:transparent;color:var(--gold);transition:all .2s;
+}
+.btn-sm:hover{background:rgba(201,163,92,.1)}
+.btn-sm.primary{background:var(--grad);border-color:transparent;color:#0a0a0a}
+.btn-sm.primary:hover{filter:brightness(1.08)}
+@media(prefers-color-scheme:light){
+  :root:not([data-theme="dark"]) .btn-sm.primary{color:#fff}
+}
+:root[data-theme="light"] .btn-sm.primary{color:#fff}
+.theme-btn{background:none;border:1px solid var(--line);color:var(--muted);padding:6px 10px;cursor:pointer;font:inherit;font-size:13px;transition:border-color .2s,color .2s}
+.theme-btn:hover{border-color:var(--line-gold);color:var(--gold)}
+@media(max-width:768px){.nav-links{display:none}}
+
+/* ── HERO ────────────────────────────────────── */
+.hero{
+  min-height:100vh;display:flex;align-items:center;
+  padding:140px 0 80px;position:relative;overflow:hidden;
+}
+.hero::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(55% 50% at 80% 25%,var(--glow),transparent 70%),
+             radial-gradient(35% 40% at 10% 85%,rgba(201,163,92,.06),transparent 70%);
+}
+.hero::after{
+  content:"";position:absolute;inset:0;pointer-events:none;opacity:.4;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:72px 72px;
+  mask-image:radial-gradient(65% 55% at 50% 40%,#000 20%,transparent 80%);
+  -webkit-mask-image:radial-gradient(65% 55% at 50% 40%,#000 20%,transparent 80%);
+}
+.hero .wrap{position:relative;z-index:1;width:100%}
+.hero-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:64px;align-items:center}
+@media(max-width:900px){.hero-grid{grid-template-columns:1fr;gap:48px}}
+.kicker{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:28px}
+.kicker span{border:1px solid var(--line-gold);color:var(--gold-hi);font-size:11px;letter-spacing:.2em;padding:5px 12px;text-transform:uppercase}
+.hero h1{margin-bottom:20px}
+.hero .lead{font-size:17px;color:var(--muted);max-width:600px;margin-bottom:40px}
+.hero-cta{display:flex;gap:14px;flex-wrap:wrap}
+.btn{
+  display:inline-flex;align-items:center;gap:10px;
+  padding:14px 28px;font:inherit;font-size:13px;font-weight:600;
+  letter-spacing:.1em;border:1px solid transparent;
+  cursor:pointer;transition:all .25s;text-decoration:none;
+}
+.btn-gold{background:var(--grad);color:#0a0a0a}
+:root[data-theme="light"] .btn-gold,
+@media(prefers-color-scheme:light){:root:not([data-theme="dark"]) .btn-gold{color:#fff}}
+.btn-gold:hover{filter:brightness(1.08);transform:translateY(-1px)}
+.btn-line{border-color:var(--line-gold);color:var(--gold-hi)}
+.btn-line:hover{background:rgba(201,163,92,.08)}
+.btn .arr{transition:transform .25s}
+.btn:hover .arr{transform:translateX(4px)}
+
+/* 右侧状态面板 */
+.hero-panel{
+  border:1px solid var(--line-gold);background:var(--bg-2);
+  position:relative;padding:32px;
+}
+.hero-panel::before{
+  content:"";position:absolute;inset:0;
+  border:1px solid var(--line-gold);
+  transform:translate(12px,12px);pointer-events:none;z-index:-1;
+}
+.panel-title{font-family:var(--serif);font-size:16px;color:var(--gold-hi);margin-bottom:20px;display:flex;align-items:center;gap:10px}
+.panel-title::after{content:"";flex:1;height:1px;background:var(--line-gold)}
+.stat-row{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);margin-bottom:20px}
+.stat-cell{background:var(--bg-2);padding:20px 16px}
+.stat-cell .v{font-family:var(--serif);font-size:36px;line-height:1;font-weight:700}
+.stat-cell .k{display:block;font-size:11px;letter-spacing:.22em;color:var(--gold);margin-top:8px;text-transform:uppercase}
+.status-list{display:flex;flex-direction:column;gap:10px}
+.status-item{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg-3);font-size:13px}
+.status-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.status-dot.on{background:#4ade80;box-shadow:0 0 6px rgba(74,222,128,.5)}
+.status-dot.off{background:var(--dim)}
+.status-dot.warn{background:#facc15}
+.status-name{flex:1;padding:0 10px;color:var(--muted)}
+.status-label{font-size:11px;letter-spacing:.1em;color:var(--dim)}
+
+/* ── 功能模块 ─────────────────────────────────── */
+.features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin-top:56px}
+@media(max-width:768px){.features-grid{grid-template-columns:1fr}}
+.feature-card{background:var(--bg);padding:40px 32px;transition:background .3s;position:relative}
+.feature-card:hover{background:var(--bg-2)}
+.feature-no{font-size:12px;letter-spacing:.28em;color:var(--gold);margin-bottom:20px;font-weight:600}
+.feature-card h3{font-family:var(--serif);font-size:22px;margin-bottom:12px}
+.feature-card p{color:var(--muted);font-size:14px;line-height:1.7}
+.feature-formats{display:flex;flex-wrap:wrap;gap:6px;margin-top:16px}
+.fmt-tag{font-size:10px;letter-spacing:.16em;color:var(--gold);border:1px solid var(--line-gold);padding:3px 8px}
+
+/* ── 工作流程 ─────────────────────────────────── */
+.flow-list{margin-top:56px}
+.flow-item{display:grid;grid-template-columns:80px 1fr 1.4fr;gap:32px;padding:36px 0;border-bottom:1px solid var(--line);transition:background .25s;align-items:start}
+.flow-item:hover{background:linear-gradient(90deg,rgba(201,163,92,.05),transparent 60%);margin:0 -16px;padding-left:16px;padding-right:16px}
+@media(max-width:700px){.flow-item{grid-template-columns:60px 1fr;gap:16px}.flow-item .flow-detail{display:none}}
+.flow-no{font-size:13px;letter-spacing:.22em;color:var(--gold);font-weight:600;padding-top:4px}
+.flow-title{font-family:var(--serif);font-size:clamp(18px,2vw,24px)}
+.flow-time{font-size:11px;letter-spacing:.2em;color:var(--dim);margin-top:6px;text-transform:uppercase}
+.flow-detail{color:var(--muted);font-size:14px;line-height:1.75}
+
+/* ── 导师接入 ─────────────────────────────────── */
+.mentor-block{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:start}
+@media(max-width:900px){.mentor-block{grid-template-columns:1fr;gap:40px}}
+.mentor-quote{font-family:var(--serif);font-size:clamp(18px,2.2vw,26px);line-height:1.6;color:var(--text);padding-left:24px;border-left:1px solid var(--gold);margin-bottom:32px}
+.mentor-items{border-top:1px solid var(--line)}
+.mentor-item{display:grid;grid-template-columns:120px 1fr;gap:16px;padding:20px 0;border-bottom:1px solid var(--line)}
+.mentor-item dt{font-size:12px;letter-spacing:.18em;color:var(--gold);font-weight:600;padding-top:2px;text-transform:uppercase}
+.mentor-item dd{color:var(--muted);font-size:14px}
+.mentor-cta-box{background:var(--bg-2);border:1px solid var(--line-gold);padding:40px}
+.mentor-cta-box h3{font-family:var(--serif);font-size:22px;margin-bottom:12px}
+.mentor-cta-box p{color:var(--muted);font-size:14px;margin-bottom:24px}
+.app-url{display:inline-flex;align-items:center;gap:8px;font-size:13px;letter-spacing:.08em;color:var(--gold);border-bottom:1px solid var(--line-gold);padding-bottom:3px}
+
+/* ── FOOTER ──────────────────────────────────── */
+footer{
+  border-top:1px solid var(--line);padding:40px 0;
+  font-size:12px;color:var(--dim);letter-spacing:.06em;
+}
+.footer-inner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
+.footer-brand{display:flex;align-items:center;gap:10px}
+.footer-brand svg{height:28px;width:auto;opacity:.6}
+.footer-links{display:flex;gap:24px}
+.footer-links a{color:var(--dim);transition:color .2s}
+.footer-links a:hover{color:var(--gold)}
+
+/* ── SCROLL CUE ──────────────────────────────── */
+.scroll-cue{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);font-size:10px;letter-spacing:.3em;color:var(--dim);z-index:1;text-transform:uppercase}
+
+/* ── 实时更新指示器 ───────────────────────────── */
+.live-badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;letter-spacing:.16em;color:var(--gold);text-transform:uppercase}
+.live-pulse{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+</style>
+
+<!-- NAV -->
+<nav class="nav" id="nav">
+  <div class="wrap">
+    <a class="brand" href="https://awesomic.top" target="_blank" rel="noopener">
+      <svg viewBox="0 0 1000 300" xmlns="http://www.w3.org/2000/svg" aria-label="Awesomic">
+        <defs><linearGradient id="amb" x1="0" y1="0" x2="0.45" y2="1"><stop offset="0" stop-color="#FFBD47"/><stop offset="0.56" stop-color="#FCAF36"/><stop offset="1" stop-color="#F1A12A"/></linearGradient></defs>
+        <g transform="translate(28 27) scale(0.9609375)"><rect width="256" height="256" rx="33" fill="url(#amb)"/><path d="M27 107 L212 66 Q217 64 219 68 L180 76 L69 120 Q64 122 59 120 L27 114 Q20 111 27 107 Z" fill="white"/><path d="M212 66 Q218 63 219 68 Q219 70 216 75 L168 133 Q163 139 156 136 L95 117 L212 66 Z" fill="white"/><path d="M95 129 Q91 126 91 135 L99 178 Q100 187 107 183 L138 162 Q142 159 136 155 L95 129 Z" fill="white"/></g>
+        <text x="310" y="210" font-family="Georgia,serif" font-size="120" font-weight="700" fill="white" letter-spacing="4">Awesomic</text>
+      </svg>
+      <div class="brand-sep"></div>
+      <span class="brand-label">内容工厂</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#features">功能模块</a></li>
+      <li><a href="#workflow">工作流程</a></li>
+      <li><a href="#mentor">导师接入</a></li>
+    </ul>
+    <div class="nav-actions">
+      <button class="theme-btn" id="themeBtn" title="切换主题">☀</button>
+      <a class="btn-sm primary" href="http://localhost:8501" target="_blank">进入工厂 →</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero" id="top">
+  <div class="wrap">
+    <div class="hero-grid">
+      <div>
+        <div class="kicker">
+          <span>AI 内容自动化</span>
+          <span>傲客品牌体系</span>
+          <span>导师风格适配</span>
+        </div>
+        <h1>每天 <span class="gold-text">30 分钟</span><br>完成一周内容生产</h1>
+        <p class="lead">选题自动采集，五种格式一键生成，对齐傲客星球的内容调性与导师写作风格，从教育热点到视频号文案、公众号文章、小红书、书稿素材，全链路自动化。</p>
+        <div class="hero-cta">
+          <a class="btn btn-gold" href="http://localhost:8501" target="_blank">
+            打开管理后台 <span class="arr">→</span>
+          </a>
+          <a class="btn btn-line" href="#workflow">查看工作流程</a>
+        </div>
+      </div>
+      <div class="hero-panel">
+        <div class="panel-title">系统状态</div>
+        <div class="stat-row">
+          <div class="stat-cell">
+            <div class="v gold-text" id="stat-topics">20</div>
+            <span class="k">今日选题</span>
+          </div>
+          <div class="stat-cell">
+            <div class="v gold-text" id="stat-drafts">5</div>
+            <span class="k">待审草稿</span>
+          </div>
+        </div>
+        <div class="status-list">
+          <div class="status-item">
+            <div class="status-dot on"></div>
+            <span class="status-name">Claude AI</span>
+            <span class="status-label">claude-sonnet-4-6</span>
+          </div>
+          <div class="status-item">
+            <div class="status-dot on"></div>
+            <span class="status-name">OpenClaw 知识库</span>
+            <span class="status-label">在线</span>
+          </div>
+          <div class="status-item">
+            <div class="status-dot on"></div>
+            <span class="status-name">Notion 发布</span>
+            <span class="status-label">已连接</span>
+          </div>
+          <div class="status-item">
+            <div class="status-dot warn"></div>
+            <span class="status-name">Gemini 备用</span>
+            <span class="status-label">中转离线</span>
+          </div>
+        </div>
+        <div style="margin-top:16px;text-align:right">
+          <span class="live-badge"><span class="live-pulse"></span>实时运行中</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="scroll-cue">向下滚动</div>
+</section>
+
+<!-- 功能模块 -->
+<section id="features">
+  <div class="wrap">
+    <div class="idx">功能模块 <b>03</b></div>
+    <h2>从选题到内容<br><span class="gold-text">全链路自动化</span></h2>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-no">[01]</div>
+        <h3>智能选题采集</h3>
+        <p>每日自动从知乎、今日热榜、36氪等20+平台聚合教育热点，Claude AI 五维度打分：相关度、时效性、热度、独特性、情绪共鸣。</p>
+        <div class="feature-formats">
+          <span class="fmt-tag">知乎热榜</span>
+          <span class="fmt-tag">今日热榜</span>
+          <span class="fmt-tag">36氪</span>
+          <span class="fmt-tag">机器之心</span>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-no">[02]</div>
+        <h3>五格式内容生成</h3>
+        <p>选题确认后 3 分钟内并行生成五种格式，注入导师的写作风格与傲客方法论，高信息密度，不套话，不废话。</p>
+        <div class="feature-formats">
+          <span class="fmt-tag">视频号文案</span>
+          <span class="fmt-tag">公众号文章</span>
+          <span class="fmt-tag">小红书</span>
+          <span class="fmt-tag">朋友圈</span>
+          <span class="fmt-tag">书稿素材</span>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-no">[03]</div>
+        <h3>知识库 · 效果反馈</h3>
+        <p>历史内容自动归档，支持 URL 抓取、文件拖入知识库；发布后录入阅读量和评分，系统分析优质内容自动回流为参考样本。</p>
+        <div class="feature-formats">
+          <span class="fmt-tag">收件箱监听</span>
+          <span class="fmt-tag">效果追踪</span>
+          <span class="fmt-tag">智能回流</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 工作流程 -->
+<section id="workflow">
+  <div class="wrap">
+    <div class="idx">每日流程 <b>05</b></div>
+    <h2>从采集到发布<br><span class="gold-text">30 分钟完成</span></h2>
+    <div class="flow-list">
+      <div class="flow-item">
+        <div class="flow-no">[08:00]</div>
+        <div>
+          <div class="flow-title">自动采集选题</div>
+          <div class="flow-time">自动 · 无需操作</div>
+        </div>
+        <div class="flow-detail">系统从 20+ 平台拉取教育 / AI 热点，Claude 自动打分排序，高分选题推送至待审列表。每日选题约 10–20 条。</div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-no">[08:30]</div>
+        <div>
+          <div class="flow-title">勾选 2–3 个选题</div>
+          <div class="flow-time">人工 · 约 5 分钟</div>
+        </div>
+        <div class="flow-detail">打开管理后台，浏览高分选题列表，勾选感兴趣的选题，填写一句话核心观点，可选填灵魂四问强化文案。</div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-no">[08:35]</div>
+        <div>
+          <div class="flow-title">一键生成五种格式</div>
+          <div class="flow-time">自动 · 约 3 分钟</div>
+        </div>
+        <div class="flow-detail">Claude 注入导师风格与傲客方法论，并行生成视频号文案、公众号文章、小红书图文、朋友圈、书稿素材。</div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-no">[08:40]</div>
+        <div>
+          <div class="flow-title">审核 · 微调 · 发布</div>
+          <div class="flow-time">人工 · 约 20 分钟</div>
+        </div>
+        <div class="flow-detail">在线预览和编辑，一键复制到各平台，发布到 Notion 归档，书稿素材自动分类到对应章节。</div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-no">[当天]</div>
+        <div>
+          <div class="flow-title">录入效果数据</div>
+          <div class="flow-time">人工 · 约 2 分钟</div>
+        </div>
+        <div class="flow-detail">记录阅读量、互动数、主观评分。系统分析优质内容（阅读≥5000 或 4 星以上）建议回流为参考样本，持续优化生成质量。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 导师接入 -->
+<section id="mentor">
+  <div class="wrap">
+    <div class="idx">导师接入 <b>02</b></div>
+    <div class="mentor-block">
+      <div>
+        <blockquote class="mentor-quote">
+          内容生产从每天写 4 小时，到每天审核 30 分钟——用 AI 写初稿，导师定调性，傲客出风格。
+        </blockquote>
+        <dl class="mentor-items">
+          <div class="mentor-item">
+            <dt>风格适配</dt>
+            <dd>每位导师有独立的 USER.md 风格档案，生成内容自动对齐个人写作调性与核心方法论。</dd>
+          </div>
+          <div class="mentor-item">
+            <dt>知识库</dt>
+            <dd>导师历史文档、文章、录音逐字稿可一键注入知识库，生成内容引用真实案例而非套话。</dd>
+          </div>
+          <div class="mentor-item">
+            <dt>书稿归档</dt>
+            <dd>每篇书稿素材自动归类到指定章节，每周整合，月底汇总进度，让书稿写作不再靠零散记录。</dd>
+          </div>
+          <div class="mentor-item">
+            <dt>持续学习</dt>
+            <dd>记录导师对 AI 草稿的修改规律，自动提炼为生成规则，下次生成质量更接近定稿。</dd>
+          </div>
+        </dl>
+      </div>
+      <div class="mentor-cta-box">
+        <div class="tag" style="margin-bottom:20px">傲客 AI 工作台</div>
+        <h3>与留学工作台<br>同一套 AI 底座</h3>
+        <p>内容工厂与傲客 AI 留学工作台共享导师知识库、学生案例和写作风格档案，内容生产直接服务业务引流，风格和口径完全统一。</p>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <a class="btn btn-gold" href="http://localhost:8501" target="_blank" style="justify-content:center">
+            打开内容工厂后台
+          </a>
+          <a class="btn btn-line" href="https://app.awesomic.top" target="_blank" style="justify-content:center">
+            前往留学工作台 <span class="arr">→</span>
+          </a>
+        </div>
+        <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--line)">
+          <div style="font-size:11px;letter-spacing:.2em;color:var(--gold);margin-bottom:8px;text-transform:uppercase">本地后台地址</div>
+          <span class="app-url">http://localhost:8501</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="wrap">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg" aria-label="Awesomic icon">
+          <defs><linearGradient id="ambF" x1="0" y1="0" x2="0.45" y2="1"><stop offset="0" stop-color="#FFBD47"/><stop offset="0.56" stop-color="#FCAF36"/><stop offset="1" stop-color="#F1A12A"/></linearGradient></defs>
+          <rect width="256" height="256" x="22" y="22" rx="33" fill="url(#ambF)"/>
+          <path d="M49 134 L234 93 Q239 91 241 95 L202 103 L91 147 Q86 149 81 147 L49 141 Q42 138 49 134 Z" fill="white"/>
+          <path d="M234 93 Q240 90 241 95 Q241 97 238 102 L190 160 Q185 166 178 163 L117 144 L234 93 Z" fill="white"/>
+          <path d="M117 156 Q113 153 113 162 L121 205 Q122 214 129 210 L160 189 Q164 186 158 182 L117 156 Z" fill="white"/>
+        </svg>
+        <span>傲客星球 · 内容工厂</span>
+      </div>
+      <div class="footer-links">
+        <a href="https://awesomic.top" target="_blank" rel="noopener">官网</a>
+        <a href="https://app.awesomic.top" target="_blank" rel="noopener">工作台</a>
+        <a href="http://localhost:8501" target="_blank">后台</a>
+      </div>
+      <div>粤ICP备2026069983号-2 · © 2026 傲客星球</div>
+    </div>
+  </div>
+</footer>
+
+<script>
+// 导航滚动效果
+const nav = document.getElementById('nav');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 40);
+}, { passive: true });
+
+// 主题切换
+const themeBtn = document.getElementById('themeBtn');
+const root = document.documentElement;
+function applyTheme(t) {
+  root.dataset.theme = t;
+  themeBtn.textContent = t === 'dark' ? '☀' : '☾';
+  try { localStorage.setItem('aok-theme', t); } catch(e) {}
+}
+themeBtn.addEventListener('click', () => {
+  applyTheme(root.dataset.theme === 'dark' ? 'light' : 'dark');
+});
+try {
+  const saved = localStorage.getItem('aok-theme');
+  if (saved) applyTheme(saved);
+  else {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    themeBtn.textContent = prefersDark ? '☀' : '☾';
+  }
+} catch(e) {}
+
+// 检查后台状态（如果可访问）
+async function checkStatus() {
+  try {
+    const res = await fetch('http://localhost:8501', { method: 'HEAD', mode: 'no-cors' });
+    // no-cors 不报错即为在线
+  } catch(e) {}
+}
+checkStatus();
+
+// 滚动动画：flow-item 进入视口时淡入
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.style.opacity = '1';
+      e.target.style.transform = 'translateY(0)';
+    }
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll('.flow-item, .feature-card').forEach(el => {
+  el.style.opacity = '0';
+  el.style.transform = 'translateY(16px)';
+  el.style.transition = 'opacity .5s ease, transform .5s ease';
+  observer.observe(el);
+});
+</script>
